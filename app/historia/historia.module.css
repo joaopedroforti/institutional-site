@@ -199,18 +199,15 @@
 
 .highlight {
   margin-top: clamp(3rem, 5vw, 4.8rem);
-  padding-top: clamp(1.6rem, 2.8vw, 2.2rem);
-  padding-bottom: clamp(1.6rem, 2.8vw, 2.2rem);
-  background: linear-gradient(180deg, #f4f9ff 0%, #ecf3ff 100%);
+  padding-top: clamp(1.2rem, 2.2vw, 1.8rem);
+  padding-bottom: clamp(1.4rem, 2.6vw, 2rem);
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
 }
 
 .highlightInner {
   max-width: 78ch;
-  border: 1px solid rgba(15, 33, 63, 0.12);
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 14px 28px rgba(14, 36, 67, 0.06);
-  padding: clamp(1rem, 2vw, 1.4rem);
+  border-left: 4px solid #1465cf;
+  padding-left: clamp(0.95rem, 1.8vw, 1.3rem);
 }
 
 .highlightInner h2 {
