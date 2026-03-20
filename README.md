@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Site Institucional
 
-## Getting Started
+Landing page institucional responsiva para serviços de consultoria tecnológica e desenvolvimento de sistemas.
 
-First, run the development server:
+## Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- CSS Modules
+
+## Executar localmente
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build de produção
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Deploy no EasyPanel
 
-To learn more about Next.js, take a look at the following resources:
+Opção recomendada: usar Docker.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Crie um novo app no EasyPanel apontando para este repositório.
+2. Configure build com o `Dockerfile` da raiz do projeto.
+3. Exponha a porta `3000`.
+4. Defina o domínio e habilite HTTPS.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estrutura principal
 
-## Deploy on Vercel
+- `app/components/landing-page.tsx`: conteúdo e seções do site.
+- `app/components/landing-page.module.css`: estilo, responsividade e animações.
+- `app/layout.tsx`: metadados e tipografia.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Personalização rápida
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Nome da empresa: ajuste `* Tecnologia` no arquivo `app/components/landing-page.tsx`.
+- E-mail e WhatsApp: ajuste os links na seção de contato.
+- Cores: ajuste variáveis no topo de `app/components/landing-page.module.css`.
