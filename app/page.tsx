@@ -1,11 +1,8 @@
 import Image from "next/image";
 import {
-  FaArrowRight,
   FaBriefcase,
   FaCartShopping,
-  FaChartLine,
   FaClock,
-  FaGear,
   FaIndustry,
   FaLock,
   FaMobileScreen,
@@ -13,17 +10,6 @@ import {
 } from "react-icons/fa6";
 import SiteShell from "./components/site-shell";
 import styles from "./home.module.css";
-
-const partnerLogos = [
-  "Vercel",
-  "Laravel",
-  "Next.js",
-  "React",
-  "Node",
-  "Supabase",
-  "PostgreSQL",
-  "n8n",
-];
 
 const technologyItems = [
   "Laravel",
@@ -57,33 +43,11 @@ export default function Home() {
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
           <div className={styles.heroText}>
-            <p className={styles.kicker}>DESENVOLVIMENTO SOB MEDIDA</p>
-            <h1>Não é software genérico. É feito para o seu mercado.</h1>
+            <p className={styles.kicker}>DESENVOLVIMENTO DE SISTEMAS</p>
+            <h1>Desenvolvimento de aplicações de alta performance</h1>
             <p>
-              Projetamos e desenvolvemos aplicações de alta performance com foco no seu processo real, na sua equipe e nos objetivos de crescimento do seu negócio.
+              Criamos soluções robustas e escaláveis, alinhadas aos objetivos do seu negócio.
             </p>
-            <div className={styles.heroActions}>
-              <a href="/contato" className={styles.primaryCta}>
-                Falar com especialista
-              </a>
-              <a href="/servicos" className={styles.secondaryCta}>
-                Conhecer serviços
-              </a>
-            </div>
-            <div className={styles.heroStats}>
-              <div>
-                <strong>100+</strong>
-                <span>Projetos entregues</span>
-              </div>
-              <div>
-                <strong>50+</strong>
-                <span>Clientes ativos</span>
-              </div>
-              <div>
-                <strong>98%</strong>
-                <span>Satisfação</span>
-              </div>
-            </div>
           </div>
           <div className={styles.heroImageWrap}>
             <Image
@@ -95,15 +59,6 @@ export default function Home() {
               priority
             />
           </div>
-        </div>
-      </section>
-
-      <section className={styles.logoStrip}>
-        <p>Tecnologias e ecossistemas com os quais trabalhamos</p>
-        <div className={styles.logoStripTrack}>
-          {partnerLogos.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
         </div>
       </section>
 
@@ -146,24 +101,6 @@ export default function Home() {
         </article>
       </section>
 
-      <section className={styles.darkSection}>
-        <div className={styles.darkMedia}>
-          <Image src="/images/joaopedroforti.jpeg" alt="Equipe FortiCorp" width={720} height={480} className={styles.darkImage} />
-        </div>
-        <div className={styles.darkText}>
-          <p className={styles.darkKicker}>COMO TRABALHAMOS</p>
-          <h2>Projeta. Implementa. Opera.</h2>
-          <p>
-            Atuamos de ponta a ponta: diagnóstico, arquitetura, desenvolvimento, integração e sustentação com acompanhamento contínuo e visão de resultado.
-          </p>
-          <ul>
-            <li>Escopo técnico claro e alinhado ao negócio</li>
-            <li>Entregas em ciclos curtos com validação contínua</li>
-            <li>Suporte pós-go-live com evolução planejada</li>
-          </ul>
-        </div>
-      </section>
-
       <section className={styles.sectionBlue}>
         <div className={styles.sectionHead}>
           <p className={styles.kicker}>PARA QUEM É NOSSO TRABALHO</p>
@@ -202,35 +139,6 @@ export default function Home() {
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionHeadInline}>
-          <div>
-            <p className={styles.kicker}>CASES E PROJETOS</p>
-            <h2>Resultados concretos em diferentes modelos de negócio</h2>
-          </div>
-          <a href="/cases" className={styles.linkArrow}>
-            Ver todos os cases <FaArrowRight aria-hidden="true" />
-          </a>
-        </div>
-        <div className={styles.gridThree}>
-          <article className={styles.caseCard}>
-            <p>B2B | Recrutamento</p>
-            <h3>Plataforma de seleção com IA</h3>
-            <span>+120% eficiência operacional</span>
-          </article>
-          <article className={styles.caseCard}>
-            <p>E-commerce | Omnichannel</p>
-            <h3>Integração vendas + logística</h3>
-            <span>-40% retrabalho manual</span>
-          </article>
-          <article className={styles.caseCard}>
-            <p>Serviços | Automação</p>
-            <h3>Agentes em múltiplos canais</h3>
-            <span>24/7 atendimento contínuo</span>
-          </article>
-        </div>
-      </section>
-
-      <section className={styles.section}>
         <div className={styles.sectionHead}>
           <p className={styles.kicker}>TECNOLOGIAS</p>
           <h2>Stack moderna para performance e escalabilidade</h2>
@@ -249,7 +157,7 @@ export default function Home() {
       <section className={styles.contactSection}>
         <div className={styles.contactGrid}>
           <article className={styles.contactCard}>
-            <p className={styles.kicker}>DIAGNÓSTICO RÁPIDO</p>
+            <p className={styles.kicker}>CONTATO</p>
             <h3>Pronto para lançar seu sistema, aplicativo ou site com segurança?</h3>
             <p>
               Vamos estruturar uma solução sob medida para seu desafio atual, com escopo claro, tecnologia certa e execução previsível.
@@ -291,23 +199,6 @@ export default function Home() {
               </button>
             </form>
           </article>
-        </div>
-      </section>
-
-      <section className={styles.bottomInsights}>
-        <div className={styles.insightCard}>
-          <span>
-            <FaChartLine aria-hidden="true" />
-          </span>
-          <h4>Inovação na prática</h4>
-          <p>Aplicamos tecnologia para destravar gargalos reais de operação e crescimento.</p>
-        </div>
-        <div className={styles.insightCard}>
-          <span>
-            <FaGear aria-hidden="true" />
-          </span>
-          <h4>Execução com método</h4>
-          <p>Processo validado, entregas com previsibilidade e evolução contínua do produto.</p>
         </div>
       </section>
     </SiteShell>

@@ -1,3 +1,7 @@
+.head {
+  margin-top: clamp(0.4rem, 1.2vw, 0.9rem);
+}
+
 .head h1 {
   font-size: clamp(1.8rem, 3vw, 3rem);
   color: #123b70;
@@ -13,7 +17,7 @@
 }
 
 .grid {
-  margin-top: 1.3rem;
+  margin-top: clamp(1.2rem, 2.2vw, 1.8rem);
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 1rem;
@@ -26,7 +30,7 @@
   border: 1px solid rgba(15, 23, 42, 0.1);
   background: #ffffff;
   box-shadow: 0 14px 24px rgba(15, 23, 42, 0.05);
-  padding: 1.2rem;
+  padding: clamp(1rem, 1.8vw, 1.25rem);
 }
 
 .story p,
@@ -48,7 +52,7 @@
 }
 
 .highlight {
-  margin-top: 1rem;
+  margin-top: clamp(1rem, 1.8vw, 1.4rem);
   border-left: 4px solid #0f6ddb;
 }
 

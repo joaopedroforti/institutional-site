@@ -121,13 +121,13 @@
 
 .main {
   width: min(1320px, calc(100% - 2rem));
-  margin: 1.8rem auto 0;
+  margin: clamp(1.2rem, 2.2vw, 2rem) auto 0;
   position: relative;
   z-index: 2;
 }
 
 .footer {
-  margin-top: 4.2rem;
+  margin-top: clamp(3rem, 6vw, 5rem);
   border-top: 1px solid var(--line);
   background: #f4f8ff;
 }
