@@ -1,10 +1,11 @@
 .head h1 {
-  font-size: clamp(1.8rem, 3.2vw, 3rem);
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  color: #123b70;
   max-width: 20ch;
 }
 
 .kicker {
-  color: #6cefe4;
+  color: #3d8ef0;
   text-transform: uppercase;
   letter-spacing: 0.11em;
   font-size: 0.74rem;
@@ -13,7 +14,7 @@
 
 .head p {
   margin-top: 0.9rem;
-  color: #a7bcde;
+  color: #5f789f;
   line-height: 1.75;
   max-width: 68ch;
 }
@@ -28,19 +29,21 @@
 .card,
 .formCard {
   border-radius: 20px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: linear-gradient(160deg, rgba(14, 22, 40, 0.95) 0%, rgba(10, 18, 34, 0.9) 100%);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #ffffff;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.05);
   padding: 1.2rem;
 }
 
 .card h2,
 .formCard h2 {
+  color: #123b70;
   font-size: 1.1rem;
 }
 
 .card p {
   margin-top: 0.7rem;
-  color: #acc1e2;
+  color: #5f789f;
   line-height: 1.72;
 }
 
@@ -54,9 +57,9 @@
 .textarea {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(15, 24, 45, 0.84);
-  color: #eaf1ff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #f7faff;
+  color: #0f294f;
   padding: 0.75rem 0.8rem;
   font: inherit;
 }
@@ -67,13 +70,13 @@
 }
 
 .button {
-  min-height: 48px;
+  min-height: 46px;
   border-radius: 999px;
   border: 0;
   font: inherit;
   font-weight: 700;
-  color: #07121f;
-  background: linear-gradient(130deg, #29e2d5 0%, #64d9ff 100%);
+  color: #ffffff;
+  background: linear-gradient(125deg, #0f6ddb 0%, #17a1ef 100%);
   cursor: pointer;
 }
 

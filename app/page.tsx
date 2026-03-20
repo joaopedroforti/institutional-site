@@ -1,4 +1,13 @@
 import Image from "next/image";
+import {
+  FaBriefcase,
+  FaCartShopping,
+  FaClock,
+  FaIndustry,
+  FaLock,
+  FaMobileScreen,
+  FaStore,
+} from "react-icons/fa6";
 import SiteShell from "./components/site-shell";
 import styles from "./home.module.css";
 
@@ -26,15 +35,16 @@ export default function Home() {
 
   return (
     <SiteShell>
-      <section className={styles.hero}>
+      <section className={styles.heroFull}>
         <video className={styles.heroVideo} autoPlay muted loop playsInline>
           <source src="/videos/herobackground.p4" type="video/mp4" />
+          <source src="/videos/background.mp4" type="video/mp4" />
         </video>
         <div className={styles.heroOverlay} />
-        <div className={styles.heroContent}>
+        <div className={styles.heroInner}>
           <div className={styles.heroText}>
             <p className={styles.kicker}>DESENVOLVIMENTO DE SISTEMAS</p>
-            <h1>Desenvolvimento de Aplicações de alta performance</h1>
+            <h1>Desenvolvimento de aplicações de alta performance</h1>
             <p>
               Criamos soluções robustas e escaláveis, alinhadas aos objetivos do seu negócio.
             </p>
@@ -62,17 +72,23 @@ export default function Home() {
         </div>
         <div className={styles.gridThree}>
           <article className={styles.card}>
-            <span className={styles.icon}>01</span>
+            <span className={`${styles.icon} ${styles.iconBlue}`}>
+              <FaMobileScreen aria-hidden="true" />
+            </span>
             <h3>Funciona em qualquer tela</h3>
             <p>Acesse do celular, tablet ou computador, sem instalar nada.</p>
           </article>
           <article className={styles.card}>
-            <span className={styles.icon}>02</span>
+            <span className={`${styles.icon} ${styles.iconCyan}`}>
+              <FaClock aria-hidden="true" />
+            </span>
             <h3>Disponível 24 horas</h3>
             <p>Sistema online para sua operação continuar rodando em qualquer horário.</p>
           </article>
           <article className={styles.card}>
-            <span className={styles.icon}>03</span>
+            <span className={`${styles.icon} ${styles.iconGreen}`}>
+              <FaLock aria-hidden="true" />
+            </span>
             <h3>Dados protegidos</h3>
             <p>Práticas de segurança de nível corporativo para manter informações críticas protegidas.</p>
           </article>
@@ -85,29 +101,37 @@ export default function Home() {
         </article>
       </section>
 
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.sectionBlue}`}>
         <div className={styles.sectionHead}>
           <p className={styles.kicker}>PARA QUEM É NOSSO TRABALHO</p>
           <h2>Soluções digitais para operações de diferentes segmentos</h2>
         </div>
         <div className={styles.gridFour}>
           <article className={styles.segmentCard}>
-            <span className={styles.icon}>C</span>
+            <span className={`${styles.icon} ${styles.iconBlue}`}>
+              <FaStore aria-hidden="true" />
+            </span>
             <h3>Comércios</h3>
             <p>Automação de pedidos, estoque e gestão para aumentar eficiência diária.</p>
           </article>
           <article className={styles.segmentCard}>
-            <span className={styles.icon}>S</span>
+            <span className={`${styles.icon} ${styles.iconPurple}`}>
+              <FaBriefcase aria-hidden="true" />
+            </span>
             <h3>Empresas de Serviços</h3>
             <p>Fluxos, atendimento e indicadores para operações de campo e escritório.</p>
           </article>
           <article className={styles.segmentCard}>
-            <span className={styles.icon}>I</span>
+            <span className={`${styles.icon} ${styles.iconOrange}`}>
+              <FaIndustry aria-hidden="true" />
+            </span>
             <h3>Indústrias</h3>
             <p>Sistemas para produção, controle de processos e tomada de decisão em tempo real.</p>
           </article>
           <article className={styles.segmentCard}>
-            <span className={styles.icon}>V</span>
+            <span className={`${styles.icon} ${styles.iconGreen}`}>
+              <FaCartShopping aria-hidden="true" />
+            </span>
             <h3>Varejo e E-commerce</h3>
             <p>Integração entre vendas, catálogo, logística e atendimento multicanal.</p>
           </article>
@@ -140,30 +164,24 @@ export default function Home() {
             </p>
             <div className={styles.steps}>
               <div className={styles.stepItem}>
-                <div className={styles.stepRow}>
-                  <span className={styles.stepNumber}>1</span>
-                  <div>
-                    <h3>Diagnóstico</h3>
-                    <p>Converse com nosso especialista para entender a melhor solução para seu projeto.</p>
-                  </div>
+                <span className={styles.stepNumber}>1</span>
+                <div>
+                  <h4>Diagnóstico</h4>
+                  <p>Converse com nosso especialista para entender a melhor solução para seu projeto.</p>
                 </div>
               </div>
               <div className={styles.stepItem}>
-                <div className={styles.stepRow}>
-                  <span className={styles.stepNumber}>2</span>
-                  <div>
-                    <h3>Plano de ação</h3>
-                    <p>Nós criamos um plano de ação com escopo, prioridades e cronograma de execução.</p>
-                  </div>
+                <span className={styles.stepNumber}>2</span>
+                <div>
+                  <h4>Plano de ação</h4>
+                  <p>Nós criamos um plano de ação com escopo, prioridades e cronograma de execução.</p>
                 </div>
               </div>
               <div className={styles.stepItem}>
-                <div className={styles.stepRow}>
-                  <span className={styles.stepNumber}>3</span>
-                  <div>
-                    <h3>Execução</h3>
-                    <p>Desenvolvemos seu projeto com a tecnologia e o modelo de entrega ideal para o negócio.</p>
-                  </div>
+                <span className={styles.stepNumber}>3</span>
+                <div>
+                  <h4>Execução</h4>
+                  <p>Desenvolvemos seu projeto com a tecnologia e o modelo de entrega ideal para o negócio.</p>
                 </div>
               </div>
             </div>

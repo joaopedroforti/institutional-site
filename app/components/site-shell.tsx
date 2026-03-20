@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CSSProperties, ReactNode, useEffect, useMemo, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa6";
 import styles from "./site-shell.module.css";
 
 type SiteShellProps = {
@@ -15,7 +16,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/", label: "Início" },
+  { href: "/", label: "Home" },
   { href: "/servicos", label: "Serviços" },
   { href: "/cases", label: "Cases" },
   { href: "/historia", label: "História" },
@@ -70,6 +71,9 @@ export default function SiteShell({ children }: SiteShellProps) {
               </Link>
             ))}
           </nav>
+          <Link href="/contato" className={styles.headerCta}>
+            Solicitar proposta
+          </Link>
         </div>
       </header>
 
@@ -79,7 +83,7 @@ export default function SiteShell({ children }: SiteShellProps) {
         <div className={styles.footerInner}>
           <h2>Sua empresa tem potencial inexplorado.</h2>
           <p>
-            Transformamos desafios operacionais em soluções digitais que aumentam produtividade, reduzem custos e fortalecem o crescimento do seu negócio com tecnologia sob medida.
+            Ajudamos você a tirar projetos do papel com tecnologia sob medida, execução estruturada e foco em resultado real para o negócio.
           </p>
           <div className={styles.footerActions}>
             <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" className={styles.primaryButton}>
@@ -92,8 +96,8 @@ export default function SiteShell({ children }: SiteShellProps) {
         </div>
       </footer>
 
-      <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" className={styles.whatsappFloat}>
-        WhatsApp
+      <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" aria-label="Falar no WhatsApp" className={styles.whatsappFloat}>
+        <FaWhatsapp aria-hidden="true" />
       </a>
     </div>
   );
