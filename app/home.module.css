@@ -4,8 +4,6 @@
   margin-left: calc(50% - 50vw);
   min-height: clamp(540px, 74vh, 740px);
   overflow: hidden;
-  border-top: 1px solid rgba(15, 23, 42, 0.1);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
 }
 
 .heroVideo {
@@ -85,8 +83,13 @@
 .sectionBlue {
   padding: clamp(1.2rem, 2.5vw, 1.8rem);
   border-radius: 24px;
-  border: 1px solid rgba(12, 102, 214, 0.14);
   background: linear-gradient(180deg, #f5f9ff 0%, #edf4ff 100%);
+}
+
+.sectionSoftBlue {
+  padding: clamp(1.2rem, 2.5vw, 1.8rem);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
 }
 
 .sectionHead h2 {
@@ -124,7 +127,6 @@
 .contactCard,
 .formCard {
   border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.11);
   background: #ffffff;
   box-shadow: 0 12px 22px rgba(15, 23, 42, 0.05);
   padding: clamp(1rem, 2vw, 1.3rem);
@@ -193,7 +195,6 @@
 .carousel {
   margin-top: 1.1rem;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
   background: #ffffff;
   overflow: hidden;
 }
@@ -216,16 +217,29 @@
 }
 
 .contactSection {
-  border-radius: 24px;
-  padding: clamp(1rem, 2vw, 1.4rem);
-  background: linear-gradient(130deg, #f7faff 0%, #edf4ff 100%);
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 0;
+  padding: clamp(1.4rem, 2.8vw, 2rem) 0;
+  background: #ffffff;
 }
 
 .contactGrid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  gap: 1rem;
+  gap: clamp(1.2rem, 2.2vw, 2rem);
+  align-items: stretch;
+}
+
+.contactSection .contactCard,
+.contactSection .formCard {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.contactSection .formCard {
+  display: grid;
+  align-items: center;
 }
 
 .steps {
@@ -235,9 +249,9 @@
 }
 
 .stepItem {
-  border: 1px solid rgba(15, 23, 42, 0.09);
-  border-radius: 14px;
-  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   padding: 0.8rem;
   display: grid;
   grid-template-columns: 52px 1fr;
@@ -270,15 +284,17 @@
 }
 
 .form {
-  margin-top: 1rem;
+  margin-top: 0;
+  height: 100%;
   display: grid;
+  align-content: center;
   gap: 0.8rem;
 }
 
 .input,
 .textarea {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 6px;
   border: 1px solid rgba(15, 23, 42, 0.14);
   background: #ffffff;
   color: #0f294f;

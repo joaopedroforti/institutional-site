@@ -62,7 +62,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.sectionSoftBlue}`}>
         <div className={styles.sectionHead}>
           <p className={styles.kicker}>DIFERENCIAIS</p>
           <h2>Tecnologia de ponta explicada de forma simples</h2>
@@ -138,7 +138,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.sectionSoftBlue}`}>
         <div className={styles.sectionHead}>
           <p className={styles.kicker}>TECNOLOGIAS</p>
           <h2>Stack moderna para performance e escalabilidade</h2>
@@ -195,7 +195,7 @@ export default function Home() {
               <input type="text" className={styles.input} placeholder="E-mail e nome da empresa" />
               <textarea className={styles.textarea} placeholder="Como podemos ajudar? Descreva brevemente seu desafio atual." />
               <button type="button" className={styles.submit}>
-                Enviar solicitação
+                Solicitar Contato
               </button>
             </form>
           </article>
