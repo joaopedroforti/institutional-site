@@ -12,7 +12,8 @@ html {
 body {
   min-height: 100%;
   font-family: var(--font-body), "Segoe UI", sans-serif;
-  color: #101a2e;
+  background: #060a13;
+  color: #eaf1ff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
