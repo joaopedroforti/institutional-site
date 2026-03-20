@@ -1,4 +1,6 @@
+import Link from "next/link";
 import {
+  FaArrowRight,
   FaChartLine,
   FaCloudArrowUp,
   FaCode,
@@ -78,6 +80,21 @@ const serviceCards: ServiceCard[] = [
   },
 ];
 
+const operatingModel = [
+  {
+    title: "Diagnóstico técnico",
+    description: "Entendemos cenário atual, gargalos e objetivos de negócio para definir prioridades reais.",
+  },
+  {
+    title: "Plano e arquitetura",
+    description: "Estruturamos escopo, stack e etapas de entrega com previsibilidade de prazo e investimento.",
+  },
+  {
+    title: "Entrega e evolução",
+    description: "Implementamos com qualidade, acompanhamos resultados e evoluímos o produto continuamente.",
+  },
+];
+
 export default function ServicesPage() {
   const getColorClass = (colorClass: ServiceCard["colorClass"]) => {
     switch (colorClass) {
@@ -98,22 +115,83 @@ export default function ServicesPage() {
 
   return (
     <SiteShell>
-      <section className={`${styles.hero} ${styles.sectionHead}`} data-reveal>
-        <p className={styles.kicker}>SERVIÇOS</p>
-        <h1>Desenvolvimento de projetos personalizados para sua empresa</h1>
-        <p>
-          Profissionais especializados e altamente qualificados, alinhados aos objetivos do cliente, com melhores práticas, metodologias e processos de mercado.
-        </p>
+      <section className={styles.hero} data-reveal>
+        <div className={styles.heroInner}>
+          <article className={styles.heroContent} data-reveal>
+            <p className={styles.kicker}>SERVIÇOS</p>
+            <h1>Desenvolvimento de projetos personalizados para sua empresa</h1>
+            <p>
+              Profissionais especializados e altamente qualificados, alinhados aos objetivos do cliente, com melhores práticas, metodologias e processos de mercado.
+            </p>
+            <div className={styles.heroActions}>
+              <Link href="/contato" className={styles.primaryButton}>
+                Solicitar proposta
+                <FaArrowRight aria-hidden="true" />
+              </Link>
+              <Link href="/cases" className={styles.secondaryButton}>
+                Ver cases
+              </Link>
+            </div>
+          </article>
+
+          <aside className={styles.heroPanel} data-reveal>
+            <h2>Entrega técnica com visão de negócio</h2>
+            <ul>
+              <li>Escopo claro e orientado a resultado.</li>
+              <li>Arquitetura preparada para escala e manutenção.</li>
+              <li>Acompanhamento próximo durante toda a execução.</li>
+            </ul>
+          </aside>
+        </div>
       </section>
 
-      <section className={styles.grid}>
-        {serviceCards.map((card) => (
-          <article className={styles.card} key={card.title} data-reveal>
-            <span className={`${styles.icon} ${getColorClass(card.colorClass)}`}>{card.icon}</span>
-            <h2>{card.title}</h2>
-            <p>{card.description}</p>
-          </article>
-        ))}
+      <section className={styles.capabilities} data-reveal>
+        <article className={styles.capabilityCard} data-reveal>
+          <h3>Projetos sob medida</h3>
+          <p>Criamos soluções alinhadas à sua operação, com tecnologia adequada ao momento do negócio.</p>
+        </article>
+        <article className={styles.capabilityCard} data-reveal>
+          <h3>Integração de ponta a ponta</h3>
+          <p>Conectamos sistemas, APIs e ferramentas para eliminar retrabalho e aumentar produtividade.</p>
+        </article>
+        <article className={styles.capabilityCard} data-reveal>
+          <h3>Sustentação contínua</h3>
+          <p>Mantemos sua solução estável, segura e evoluindo com suporte técnico especializado.</p>
+        </article>
+      </section>
+
+      <section className={styles.servicesSection}>
+        <div className={styles.sectionHead} data-reveal>
+          <p className={styles.kicker}>PORTFÓLIO DE SERVIÇOS</p>
+          <h2>Soluções completas para evoluir seu ambiente digital</h2>
+        </div>
+
+        <div className={styles.grid}>
+          {serviceCards.map((card) => (
+            <article className={styles.card} key={card.title} data-reveal>
+              <span className={`${styles.icon} ${getColorClass(card.colorClass)}`}>{card.icon}</span>
+              <h3>{card.title}</h3>
+              <p>{card.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.modelSection} data-reveal>
+        <div className={styles.sectionHead} data-reveal>
+          <p className={styles.kicker}>COMO TRABALHAMOS</p>
+          <h2>Modelo de execução para garantir previsibilidade e qualidade</h2>
+        </div>
+
+        <div className={styles.modelGrid}>
+          {operatingModel.map((step, index) => (
+            <article className={styles.modelItem} key={step.title} data-reveal>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
       </section>
     </SiteShell>
   );
