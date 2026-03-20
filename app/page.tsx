@@ -1,35 +1,55 @@
-import Link from "next/link";
+import Image from "next/image";
 import SiteShell from "./components/site-shell";
-import styles from "./site-page.module.css";
+import styles from "./home.module.css";
+
+const technologyItems = [
+  "Laravel",
+  "Bootstrap",
+  "Tailwind CSS",
+  "Node.js",
+  "Next.js",
+  "React",
+  "PHP",
+  "CSS",
+  "WordPress",
+  "PostgreSQL",
+  "n8n",
+  "Supabase",
+  "C#",
+  "TypeScript",
+  "Python",
+  "Docker",
+];
 
 export default function Home() {
+  const loopItems = [...technologyItems, ...technologyItems];
+
   return (
     <SiteShell>
       <section className={styles.hero}>
-        <div className={styles.heroMain}>
-          <p className={styles.kicker}>CONSULTORIA TECNOLÓGICA</p>
-          <h1>Sua empresa merece mais do que improviso.</h1>
-          <p>
-            Apoiamos sua empresa para encontrar as melhores soluções tecnológicas diante dos desafios do mercado. Projetamos e desenvolvemos sistemas com foco em performance, escalabilidade e resultado de negócio.
-          </p>
-          <div className={styles.actionRow}>
-            <Link href="/contato" className={styles.primaryButton}>
-              Quero começar meu projeto
-            </Link>
-            <Link href="/servicos" className={styles.secondaryButton}>
-              Ver serviços
-            </Link>
+        <video className={styles.heroVideo} autoPlay muted loop playsInline>
+          <source src="/videos/herobackground.p4" type="video/mp4" />
+        </video>
+        <div className={styles.heroOverlay} />
+        <div className={styles.heroContent}>
+          <div className={styles.heroText}>
+            <p className={styles.kicker}>DESENVOLVIMENTO DE SISTEMAS</p>
+            <h1>Desenvolvimento de Aplicações de alta performance</h1>
+            <p>
+              Criamos soluções robustas e escaláveis, alinhadas aos objetivos do seu negócio.
+            </p>
+          </div>
+          <div className={styles.heroImageWrap}>
+            <Image
+              src="/images/hero-visual.svg"
+              alt="Ilustração de plataforma digital"
+              width={720}
+              height={520}
+              className={styles.heroImage}
+              priority
+            />
           </div>
         </div>
-        <aside className={styles.heroAside}>
-          <h2>O que a sua empresa precisa em tecnologia</h2>
-          <ul>
-            <li>Sistemas web e portais internos sob medida</li>
-            <li>Aplicativos para operação, vendas e atendimento</li>
-            <li>Integrações com banco, nota fiscal, ERP e WhatsApp</li>
-            <li>Manutenção, sustentação e evolução contínua</li>
-          </ul>
-        </aside>
       </section>
 
       <section className={styles.section}>
@@ -42,34 +62,125 @@ export default function Home() {
         </div>
         <div className={styles.gridThree}>
           <article className={styles.card}>
+            <span className={styles.icon}>01</span>
             <h3>Funciona em qualquer tela</h3>
             <p>Acesse do celular, tablet ou computador, sem instalar nada.</p>
           </article>
           <article className={styles.card}>
+            <span className={styles.icon}>02</span>
             <h3>Disponível 24 horas</h3>
             <p>Sistema online para sua operação continuar rodando em qualquer horário.</p>
           </article>
           <article className={styles.card}>
+            <span className={styles.icon}>03</span>
             <h3>Dados protegidos</h3>
             <p>Práticas de segurança de nível corporativo para manter informações críticas protegidas.</p>
+          </article>
+        </div>
+        <article className={styles.callout}>
+          <h3>Projetos personalizados e sustentação contínua</h3>
+          <p>
+            Nossa estrutura atende desde criação de sites institucionais até desenvolvimento completo de grandes projetos em múltiplas plataformas.
+          </p>
+        </article>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <p className={styles.kicker}>PARA QUEM É NOSSO TRABALHO</p>
+          <h2>Soluções digitais para operações de diferentes segmentos</h2>
+        </div>
+        <div className={styles.gridFour}>
+          <article className={styles.segmentCard}>
+            <span className={styles.icon}>C</span>
+            <h3>Comércios</h3>
+            <p>Automação de pedidos, estoque e gestão para aumentar eficiência diária.</p>
+          </article>
+          <article className={styles.segmentCard}>
+            <span className={styles.icon}>S</span>
+            <h3>Empresas de Serviços</h3>
+            <p>Fluxos, atendimento e indicadores para operações de campo e escritório.</p>
+          </article>
+          <article className={styles.segmentCard}>
+            <span className={styles.icon}>I</span>
+            <h3>Indústrias</h3>
+            <p>Sistemas para produção, controle de processos e tomada de decisão em tempo real.</p>
+          </article>
+          <article className={styles.segmentCard}>
+            <span className={styles.icon}>V</span>
+            <h3>Varejo e E-commerce</h3>
+            <p>Integração entre vendas, catálogo, logística e atendimento multicanal.</p>
           </article>
         </div>
       </section>
 
       <section className={styles.section}>
-        <div className={styles.callout}>
-          <h3>Projetos personalizados e sustentação contínua</h3>
-          <p>
-            Nossa estrutura atende desde melhorias em aplicativos existentes até desenvolvimento completo de grandes projetos em múltiplas plataformas.
-          </p>
-          <div className={styles.actionRow}>
-            <Link href="/processo" className={styles.secondaryButton}>
-              Entender processo
-            </Link>
-            <Link href="/sobre" className={styles.secondaryButton}>
-              Conhecer empresa
-            </Link>
+        <div className={styles.sectionHead}>
+          <p className={styles.kicker}>TECNOLOGIAS</p>
+          <h2>Stack moderna para performance e escalabilidade</h2>
+        </div>
+        <div className={styles.carousel}>
+          <div className={styles.track}>
+            {loopItems.map((item, index) => (
+              <span className={styles.logoItem} key={`${item}-${index}`}>
+                {item}
+              </span>
+            ))}
           </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.contactGrid}>
+          <article className={styles.contactCard}>
+            <p className={styles.kicker}>CONTATO</p>
+            <h3>Pronto para lançar seu sistema, aplicativo ou site com segurança?</h3>
+            <p>
+              Vamos estruturar uma solução sob medida para seu desafio atual, com escopo claro, tecnologia certa e execução previsível.
+            </p>
+            <div className={styles.steps}>
+              <div className={styles.stepItem}>
+                <div className={styles.stepRow}>
+                  <span className={styles.stepNumber}>1</span>
+                  <div>
+                    <h3>Diagnóstico</h3>
+                    <p>Converse com nosso especialista para entender a melhor solução para seu projeto.</p>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.stepItem}>
+                <div className={styles.stepRow}>
+                  <span className={styles.stepNumber}>2</span>
+                  <div>
+                    <h3>Plano de ação</h3>
+                    <p>Nós criamos um plano de ação com escopo, prioridades e cronograma de execução.</p>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.stepItem}>
+                <div className={styles.stepRow}>
+                  <span className={styles.stepNumber}>3</span>
+                  <div>
+                    <h3>Execução</h3>
+                    <p>Desenvolvemos seu projeto com a tecnologia e o modelo de entrega ideal para o negócio.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article className={styles.formCard}>
+            <h3>Solicitar proposta</h3>
+            <form className={styles.form}>
+              <input type="text" className={styles.input} placeholder="Nome completo" />
+              <input type="text" className={styles.input} placeholder="Celular / WhatsApp" />
+              <input type="text" className={styles.input} placeholder="E-mail e nome da empresa" />
+              <textarea className={styles.textarea} placeholder="Como podemos ajudar? Descreva brevemente seu desafio atual." />
+              <button type="button" className={styles.submit}>
+                Enviar solicitação
+              </button>
+            </form>
+          </article>
         </div>
       </section>
     </SiteShell>

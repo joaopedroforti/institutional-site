@@ -1,0 +1,309 @@
+.hero {
+  position: relative;
+  min-height: clamp(470px, 70vh, 650px);
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  display: grid;
+  align-items: stretch;
+}
+
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 10, 18, 0.84) 0%, rgba(7, 13, 24, 0.72) 44%, rgba(7, 12, 22, 0.56) 100%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  display: grid;
+  grid-template-columns: 1fr 0.95fr;
+  gap: 1rem;
+}
+
+.heroText {
+  align-self: center;
+}
+
+.kicker {
+  color: #6cefe4;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.heroText h1 {
+  margin-top: 0.8rem;
+  font-size: clamp(2rem, 4.2vw, 4rem);
+  line-height: 1.03;
+  max-width: 14ch;
+}
+
+.heroText p {
+  margin-top: 1rem;
+  color: #c3d3ed;
+  line-height: 1.75;
+  max-width: 58ch;
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+}
+
+.heroImageWrap {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 470px);
+  animation: floatY 5.4s ease-in-out infinite;
+}
+
+.heroImage {
+  width: 100%;
+  height: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 28px 48px rgba(2, 8, 23, 0.42);
+}
+
+.section {
+  margin-top: 3.6rem;
+}
+
+.sectionHead h2 {
+  margin-top: 0.8rem;
+  font-size: clamp(1.5rem, 3vw, 2.7rem);
+  max-width: 23ch;
+}
+
+.sectionHead p {
+  margin-top: 0.9rem;
+  color: #9fb3d4;
+  max-width: 72ch;
+  line-height: 1.75;
+}
+
+.gridThree,
+.gridFour {
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.gridThree {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gridFour {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.card,
+.segmentCard,
+.callout,
+.contactCard,
+.formCard,
+.stepItem {
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(160deg, rgba(14, 22, 40, 0.95) 0%, rgba(11, 18, 34, 0.9) 100%);
+  box-shadow: 0 18px 38px rgba(2, 8, 23, 0.34);
+}
+
+.card,
+.segmentCard,
+.callout,
+.contactCard,
+.formCard,
+.stepItem {
+  padding: 1.2rem;
+}
+
+.icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(29, 212, 199, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #81f6ee;
+  font-weight: 700;
+}
+
+.card h3,
+.segmentCard h3,
+.callout h3,
+.contactCard h3,
+.formCard h3,
+.stepItem h3 {
+  margin-top: 0.9rem;
+  font-size: 1.08rem;
+}
+
+.card p,
+.segmentCard p,
+.callout p,
+.contactCard p,
+.formCard p,
+.stepItem p {
+  margin-top: 0.75rem;
+  color: #abc0e2;
+  line-height: 1.72;
+}
+
+.callout {
+  margin-top: 1rem;
+}
+
+.carousel {
+  margin-top: 1.2rem;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(10, 17, 33, 0.78);
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  width: max-content;
+  animation: slideLoop 24s linear infinite;
+}
+
+.logoItem {
+  min-width: 150px;
+  padding: 0.95rem 1rem;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  color: #d5e4ff;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contactGrid {
+  margin-top: 1.2rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.1fr 0.9fr;
+}
+
+.steps {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.stepRow {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.stepNumber {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: rgba(59, 130, 246, 0.14);
+  color: #8bc8ff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 24, 45, 0.84);
+  color: #eaf1ff;
+  padding: 0.75rem 0.8rem;
+  font: inherit;
+}
+
+.textarea {
+  min-height: 122px;
+  resize: vertical;
+}
+
+.submit {
+  min-height: 48px;
+  border-radius: 999px;
+  border: 0;
+  font-weight: 700;
+  font: inherit;
+  color: #07121f;
+  background: linear-gradient(130deg, #29e2d5 0%, #64d9ff 100%);
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .heroContent {
+    grid-template-columns: 1fr;
+  }
+
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .gridFour {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .gridThree,
+  .gridFour {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroImageWrap,
+  .track {
+    animation: none;
+  }
+}
+
+@keyframes slideLoop {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes floatY {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}

@@ -17,9 +17,8 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/", label: "Início" },
   { href: "/servicos", label: "Serviços" },
-  { href: "/processo", label: "Processo" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/contato", label: "Contato" },
+  { href: "/cases", label: "Cases" },
+  { href: "/historia", label: "História" },
 ];
 
 export default function SiteShell({ children }: SiteShellProps) {
@@ -46,7 +45,7 @@ export default function SiteShell({ children }: SiteShellProps) {
   }, []);
 
   const pageStyle = useMemo(
-    () => ({ "--scroll-offset": `${scrollOffset}px` }) as CSSProperties,
+    () => ({ "--scroll-offset": scrollOffset + "px" }) as CSSProperties,
     [scrollOffset],
   );
 
@@ -54,31 +53,48 @@ export default function SiteShell({ children }: SiteShellProps) {
     <div className={styles.page} style={pageStyle}>
       <div className={styles.backdropA} />
       <div className={styles.backdropB} />
-      <div className={styles.backdropC} />
 
       <header className={styles.header}>
-        <Link href="/" className={styles.brand}>
-          * Tecnologia
-        </Link>
-        <nav className={styles.nav}>
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={pathname === item.href ? styles.activeLink : styles.navLink}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <div className={styles.headerInner}>
+          <Link href="/" className={styles.brand}>
+            Forti Sistemas
+          </Link>
+          <nav className={styles.nav}>
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={pathname === item.href ? styles.activeLink : styles.navLink}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </header>
 
       <main className={styles.main}>{children}</main>
 
       <footer className={styles.footer}>
-        <p>* Tecnologia</p>
-        <p>Consultoria tecnológica e desenvolvimento de sistemas sob medida para empresas.</p>
+        <div className={styles.footerInner}>
+          <h2>Sua empresa tem potencial inexplorado.</h2>
+          <p>
+            Transformamos desafios operacionais em soluções digitais que aumentam produtividade, reduzem custos e fortalecem o crescimento do seu negócio com tecnologia sob medida.
+          </p>
+          <div className={styles.footerActions}>
+            <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" className={styles.primaryButton}>
+              Falar no WhatsApp
+            </a>
+            <Link href="/contato" className={styles.secondaryButton}>
+              Solicitar proposta
+            </Link>
+          </div>
+        </div>
       </footer>
+
+      <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" className={styles.whatsappFloat}>
+        WhatsApp
+      </a>
     </div>
   );
 }
