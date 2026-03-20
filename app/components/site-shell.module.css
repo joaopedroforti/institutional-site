@@ -116,7 +116,7 @@
 
 .main {
   width: min(1320px, calc(100% - 2rem));
-  margin: clamp(1rem, 2vw, 1.8rem) auto 0;
+  margin: 0 auto 0;
   position: relative;
   z-index: 2;
 }
