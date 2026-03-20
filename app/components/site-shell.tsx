@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CSSProperties, ReactNode, useEffect, useMemo, useState } from "react";
@@ -58,7 +59,15 @@ export default function SiteShell({ children }: SiteShellProps) {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <Link href="/" className={styles.brand}>
-            Forti Sistemas
+            <Image
+              src="/images/logo.png"
+              alt="Logo FortiCorp"
+              width={128}
+              height={36}
+              className={styles.brandLogo}
+              priority
+            />
+            <span>FortiCorp</span>
           </Link>
           <nav className={styles.nav}>
             {navItems.map((item) => (

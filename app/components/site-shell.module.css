@@ -60,11 +60,19 @@
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #0f294f;
+}
+
+.brandLogo {
+  width: auto;
+  height: 34px;
 }
 
 .nav {

@@ -15,7 +15,7 @@ const bodyFont = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Consultoria Tecnológica e Desenvolvimento de Sistemas",
+  title: "FortiCorp | Consultoria Tecnológica e Desenvolvimento de Sistemas",
   description:
     "Consultoria tecnológica, desenvolvimento de software sob medida, automação de processos e sustentação de projetos para empresas.",
 };
