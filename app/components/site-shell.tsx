@@ -128,20 +128,22 @@ export default function SiteShell({ children }: SiteShellProps) {
               priority
             />
           </Link>
-          <nav className={styles.nav}>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={pathname === item.href ? styles.activeLink : styles.navLink}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <Link href="/contato" className={styles.headerCta}>
-            Solicitar proposta
-          </Link>
+          <div className={styles.menuGroup}>
+            <nav className={styles.nav}>
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={pathname === item.href ? styles.activeLink : styles.navLink}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <Link href="/contato" className={styles.headerCta}>
+              Solicitar proposta
+            </Link>
+          </div>
         </div>
       </header>
 
