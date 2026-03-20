@@ -58,7 +58,7 @@
 }
 
 .card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-5px) rotateX(0.8deg);
   border-color: rgba(15, 109, 219, 0.36);
   box-shadow: 0 22px 38px rgba(15, 109, 219, 0.16);
 }
@@ -114,6 +114,38 @@
   margin-top: 0.72rem;
   color: #5b7398;
   line-height: 1.75;
+}
+
+.grid > [data-reveal]:nth-child(1) {
+  --reveal-delay: 70ms;
+}
+
+.grid > [data-reveal]:nth-child(2) {
+  --reveal-delay: 130ms;
+}
+
+.grid > [data-reveal]:nth-child(3) {
+  --reveal-delay: 190ms;
+}
+
+.grid > [data-reveal]:nth-child(4) {
+  --reveal-delay: 250ms;
+}
+
+.grid > [data-reveal]:nth-child(5) {
+  --reveal-delay: 310ms;
+}
+
+.grid > [data-reveal]:nth-child(6) {
+  --reveal-delay: 370ms;
+}
+
+.grid > [data-reveal]:nth-child(7) {
+  --reveal-delay: 430ms;
+}
+
+.grid > [data-reveal]:nth-child(8) {
+  --reveal-delay: 490ms;
 }
 
 @media (max-width: 1180px) {

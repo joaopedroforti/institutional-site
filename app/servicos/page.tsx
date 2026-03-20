@@ -98,7 +98,7 @@ export default function ServicesPage() {
 
   return (
     <SiteShell>
-      <section className={`${styles.hero} ${styles.sectionHead}`}>
+      <section className={`${styles.hero} ${styles.sectionHead}`} data-reveal>
         <p className={styles.kicker}>SERVIÇOS</p>
         <h1>Desenvolvimento de projetos personalizados para sua empresa</h1>
         <p>
@@ -108,7 +108,7 @@ export default function ServicesPage() {
 
       <section className={styles.grid}>
         {serviceCards.map((card) => (
-          <article className={styles.card} key={card.title}>
+          <article className={styles.card} key={card.title} data-reveal>
             <span className={`${styles.icon} ${getColorClass(card.colorClass)}`}>{card.icon}</span>
             <h2>{card.title}</h2>
             <p>{card.description}</p>

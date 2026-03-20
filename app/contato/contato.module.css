@@ -101,6 +101,14 @@
   box-shadow: 0 12px 24px rgba(15, 102, 205, 0.24);
 }
 
+.grid > [data-reveal]:nth-child(1) {
+  --reveal-delay: 90ms;
+}
+
+.grid > [data-reveal]:nth-child(2) {
+  --reveal-delay: 180ms;
+}
+
 @media (max-width: 880px) {
   .grid {
     grid-template-columns: 1fr;

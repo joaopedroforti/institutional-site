@@ -63,7 +63,7 @@
 }
 
 .cardLink:hover {
-  transform: translateY(-5px);
+  transform: translateY(-5px) rotateX(0.8deg);
   border-color: rgba(15, 109, 219, 0.35);
   box-shadow: 0 22px 38px rgba(15, 109, 219, 0.16);
 }
@@ -117,6 +117,30 @@
   margin-top: 0.7rem;
   color: #5c7499;
   line-height: 1.75;
+}
+
+.grid > [data-reveal]:nth-child(1) {
+  --reveal-delay: 90ms;
+}
+
+.grid > [data-reveal]:nth-child(2) {
+  --reveal-delay: 170ms;
+}
+
+.grid > [data-reveal]:nth-child(3) {
+  --reveal-delay: 250ms;
+}
+
+.grid > [data-reveal]:nth-child(4) {
+  --reveal-delay: 330ms;
+}
+
+.grid > [data-reveal]:nth-child(5) {
+  --reveal-delay: 410ms;
+}
+
+.grid > [data-reveal]:nth-child(6) {
+  --reveal-delay: 490ms;
 }
 
 @media (max-width: 1120px) {

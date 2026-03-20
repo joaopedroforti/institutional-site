@@ -4,7 +4,7 @@ import styles from "./contato.module.css";
 export default function ContactPage() {
   return (
     <SiteShell>
-      <section className={styles.head}>
+      <section className={styles.head} data-reveal>
         <p className={styles.kicker}>CONTATO</p>
         <h1>Vamos transformar seu desafio em uma solução digital de alto impacto</h1>
         <p>
@@ -13,14 +13,14 @@ export default function ContactPage() {
       </section>
 
       <section className={styles.grid}>
-        <article className={styles.card}>
+        <article className={styles.card} data-reveal>
           <h2>Fale com nosso time</h2>
           <p>E-mail: contato@seudominio.com</p>
           <p>WhatsApp: +55 (19) 98221-4340</p>
           <p>Atendimento para novos projetos, evolução de plataformas e suporte técnico especializado.</p>
         </article>
 
-        <article className={styles.formCard}>
+        <article className={styles.formCard} data-reveal>
           <h2>Solicitar proposta</h2>
           <form className={styles.form}>
             <input className={styles.input} type="text" placeholder="Nome completo" />

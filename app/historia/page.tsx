@@ -5,13 +5,13 @@ import styles from "./historia.module.css";
 export default function HistoryPage() {
   return (
     <SiteShell>
-      <section className={`${styles.hero} ${styles.head}`}>
+      <section className={`${styles.hero} ${styles.head}`} data-reveal>
         <p className={styles.kicker}>HISTÓRIA</p>
         <h1>Uma trajetória construída com tecnologia, consistência e resultado</h1>
       </section>
 
       <section className={styles.grid}>
-        <article className={styles.story}>
+        <article className={styles.story} data-reveal>
           <p>
             Apaixonado por programação, nosso fundador João Pedro Forti atua na área desde 2015. No início da jornada, desenvolvia projetos para pequenas empresas em troca de aprendizado prático, mergulhando em desafios reais para acelerar evolução técnica.
           </p>
@@ -23,7 +23,7 @@ export default function HistoryPage() {
           </p>
         </article>
 
-        <aside className={styles.photoCard}>
+        <aside className={styles.photoCard} data-reveal>
           <Image
             src="/images/joaopedroforti.jpeg"
             alt="João Pedro Forti"
@@ -35,7 +35,7 @@ export default function HistoryPage() {
         </aside>
       </section>
 
-      <article className={styles.highlight}>
+      <article className={styles.highlight} data-reveal>
         <p>
           Nossa missão é transformar tecnologia em vantagem competitiva para empresas que precisam de sistemas confiáveis, processos digitais eficientes e crescimento sustentável. Cada projeto é construído com foco em estratégia, experiência do usuário e excelência técnica.
         </p>

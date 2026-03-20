@@ -62,7 +62,7 @@ const cases: CaseCard[] = [
 export default function CasesPage() {
   return (
     <SiteShell>
-      <section className={`${styles.hero} ${styles.head}`}>
+      <section className={`${styles.hero} ${styles.head}`} data-reveal>
         <p className={styles.kicker}>RESULTADOS REAIS</p>
         <h1>Não vendemos horas, vendemos performance</h1>
         <p>Conheça algumas das histórias que ajudamos a construir para empresas de diferentes segmentos.</p>
@@ -77,6 +77,7 @@ export default function CasesPage() {
               href={item.url}
               target="_blank"
               rel="noreferrer"
+              data-reveal
             >
               <span className={styles.visitAction}>
                 Visitar site
@@ -88,7 +89,7 @@ export default function CasesPage() {
               <p className={styles.description}>{item.description}</p>
             </a>
           ) : (
-            <article className={styles.card} key={item.company + item.project}>
+            <article className={styles.card} key={item.company + item.project} data-reveal>
               <p className={styles.tags}>{item.tags}</p>
               <h2 className={styles.company}>{item.company}</h2>
               <h3 className={styles.project}>{item.project}</h3>

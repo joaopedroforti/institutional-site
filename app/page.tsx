@@ -59,15 +59,17 @@ export default function Home() {
           <source src="/videos/background.mp4" type="video/mp4" />
         </video>
         <div className={styles.heroOverlay} />
+        <div className={styles.heroOrbA} />
+        <div className={styles.heroOrbB} />
         <div className={styles.heroInner}>
-          <div className={styles.heroText}>
+          <div className={styles.heroText} data-reveal>
             <p className={styles.kicker}>DESENVOLVIMENTO DE SISTEMAS</p>
             <h1>Desenvolvimento de aplicações de alta performance</h1>
             <p>
               Criamos soluções robustas e escaláveis, alinhadas aos objetivos do seu negócio.
             </p>
           </div>
-          <div className={styles.heroImageWrap}>
+          <div className={styles.heroImageWrap} data-reveal>
             <Image
               src="/images/hero-visual.svg"
               alt="Painel de produto digital"
@@ -80,8 +82,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.sectionSoftBlue}`}>
-        <div className={styles.sectionHead}>
+      <section className={`${styles.section} ${styles.sectionSoftBlue}`} data-reveal>
+        <div className={styles.sectionHead} data-reveal>
           <p className={styles.kicker}>DIFERENCIAIS</p>
           <h2>Tecnologia de ponta explicada de forma simples</h2>
           <p>
@@ -89,21 +91,21 @@ export default function Home() {
           </p>
         </div>
         <div className={styles.gridThree}>
-          <article className={styles.card}>
+          <article className={styles.card} data-reveal>
             <span className={`${styles.icon} ${styles.iconBlue}`}>
               <FaMobileScreen aria-hidden="true" />
             </span>
             <h3>Funciona em qualquer tela</h3>
             <p>Acesse do celular, tablet ou computador, sem instalar nada.</p>
           </article>
-          <article className={styles.card}>
+          <article className={styles.card} data-reveal>
             <span className={`${styles.icon} ${styles.iconCyan}`}>
               <FaClock aria-hidden="true" />
             </span>
             <h3>Disponível 24 horas</h3>
             <p>Sistema online para sua operação continuar rodando em qualquer horário.</p>
           </article>
-          <article className={styles.card}>
+          <article className={styles.card} data-reveal>
             <span className={`${styles.icon} ${styles.iconGreen}`}>
               <FaLock aria-hidden="true" />
             </span>
@@ -111,7 +113,7 @@ export default function Home() {
             <p>Práticas de segurança de nível corporativo para manter informações críticas protegidas.</p>
           </article>
         </div>
-        <article className={styles.callout}>
+        <article className={styles.callout} data-reveal>
           <h3>Projetos personalizados e sustentação contínua</h3>
           <p>
             Nossa estrutura atende desde criação de sites institucionais até desenvolvimento completo de grandes projetos em múltiplas plataformas.
@@ -119,34 +121,34 @@ export default function Home() {
         </article>
       </section>
 
-      <section className={styles.sectionBlue}>
-        <div className={styles.sectionHead}>
+      <section className={styles.sectionBlue} data-reveal>
+        <div className={styles.sectionHead} data-reveal>
           <p className={styles.kicker}>PARA QUEM É NOSSO TRABALHO</p>
           <h2>Soluções digitais para operações de diferentes segmentos</h2>
         </div>
         <div className={styles.gridFour}>
-          <article className={styles.segmentCard}>
+          <article className={styles.segmentCard} data-reveal>
             <span className={`${styles.icon} ${styles.iconBlue}`}>
               <FaStore aria-hidden="true" />
             </span>
             <h3>Comércios</h3>
             <p>Automação de pedidos, estoque e gestão para aumentar eficiência diária.</p>
           </article>
-          <article className={styles.segmentCard}>
+          <article className={styles.segmentCard} data-reveal>
             <span className={`${styles.icon} ${styles.iconPurple}`}>
               <FaBriefcase aria-hidden="true" />
             </span>
             <h3>Empresas de Serviços</h3>
             <p>Fluxos, atendimento e indicadores para operações de campo e escritório.</p>
           </article>
-          <article className={styles.segmentCard}>
+          <article className={styles.segmentCard} data-reveal>
             <span className={`${styles.icon} ${styles.iconOrange}`}>
               <FaIndustry aria-hidden="true" />
             </span>
             <h3>Indústrias</h3>
             <p>Sistemas para produção, controle de processos e tomada de decisão em tempo real.</p>
           </article>
-          <article className={styles.segmentCard}>
+          <article className={styles.segmentCard} data-reveal>
             <span className={`${styles.icon} ${styles.iconGreen}`}>
               <FaCartShopping aria-hidden="true" />
             </span>
@@ -156,12 +158,12 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.techSection}`}>
-        <div className={styles.sectionHead}>
+      <section className={`${styles.section} ${styles.techSection}`} data-reveal>
+        <div className={styles.sectionHead} data-reveal>
           <p className={styles.kicker}>TECNOLOGIAS</p>
           <h2>Stack moderna para performance e escalabilidade</h2>
         </div>
-        <div className={styles.carousel}>
+        <div className={styles.carousel} data-reveal>
           <div className={styles.track}>
             {loopItems.map((item, index) => (
               <span className={styles.logoItem} key={`${item.label}-${index}`} title={item.label} aria-label={item.label}>
@@ -172,30 +174,30 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={styles.contactSection}>
+      <section className={styles.contactSection} data-reveal>
         <div className={styles.contactGrid}>
-          <article className={styles.contactCard}>
+          <article className={styles.contactCard} data-reveal>
             <p className={styles.kicker}>CONTATO</p>
             <h3>Pronto para lançar seu sistema, aplicativo ou site com segurança?</h3>
             <p>
               Vamos estruturar uma solução sob medida para seu desafio atual, com escopo claro, tecnologia certa e execução previsível.
             </p>
             <div className={styles.steps}>
-              <div className={styles.stepItem}>
+              <div className={styles.stepItem} data-reveal>
                 <span className={styles.stepNumber}>1</span>
                 <div>
                   <h4>Diagnóstico</h4>
                   <p>Converse com nosso especialista para entender a melhor solução para seu projeto.</p>
                 </div>
               </div>
-              <div className={styles.stepItem}>
+              <div className={styles.stepItem} data-reveal>
                 <span className={styles.stepNumber}>2</span>
                 <div>
                   <h4>Plano de ação</h4>
                   <p>Nós criamos um plano de ação com escopo, prioridades e cronograma de execução.</p>
                 </div>
               </div>
-              <div className={styles.stepItem}>
+              <div className={styles.stepItem} data-reveal>
                 <span className={styles.stepNumber}>3</span>
                 <div>
                   <h4>Execução</h4>
@@ -205,7 +207,7 @@ export default function Home() {
             </div>
           </article>
 
-          <article className={styles.formCard}>
+          <article className={styles.formCard} data-reveal>
             <h3>Solicitar proposta</h3>
             <form className={styles.form}>
               <input type="text" className={styles.input} placeholder="Nome completo" />

@@ -22,6 +22,32 @@
     radial-gradient(circle at 80% 22%, rgba(11, 109, 219, 0.28) 0%, transparent 52%);
 }
 
+.heroOrbA,
+.heroOrbB {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+
+.heroOrbA {
+  width: clamp(200px, 26vw, 360px);
+  height: clamp(200px, 26vw, 360px);
+  right: clamp(-40px, 4vw, 70px);
+  top: 16%;
+  background: radial-gradient(circle, rgba(22, 138, 241, 0.34) 0%, rgba(22, 138, 241, 0) 72%);
+  transform: translateY(calc(var(--scroll-offset) * -0.08));
+}
+
+.heroOrbB {
+  width: clamp(160px, 20vw, 260px);
+  height: clamp(160px, 20vw, 260px);
+  left: clamp(-30px, 3vw, 40px);
+  bottom: 6%;
+  background: radial-gradient(circle, rgba(46, 171, 255, 0.24) 0%, rgba(46, 171, 255, 0) 70%);
+  transform: translateY(calc(var(--scroll-offset) * 0.09));
+}
+
 .heroInner {
   width: min(var(--container-max), calc(100% - 2 * var(--container-pad)));
   margin: 0 auto;
@@ -74,6 +100,8 @@
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 28px 60px rgba(7, 16, 30, 0.52);
+  transform: perspective(960px) rotateY(calc(var(--pointer-x) * 4deg)) rotateX(calc(var(--pointer-y) * -3deg));
+  transition: transform 260ms ease;
 }
 
 .section,
@@ -133,6 +161,25 @@
   margin-top: clamp(1.2rem, 2.2vw, 1.8rem);
   display: grid;
   gap: 1.15rem;
+}
+
+.gridThree > [data-reveal]:nth-child(1),
+.gridFour > [data-reveal]:nth-child(1) {
+  --reveal-delay: 80ms;
+}
+
+.gridThree > [data-reveal]:nth-child(2),
+.gridFour > [data-reveal]:nth-child(2) {
+  --reveal-delay: 170ms;
+}
+
+.gridThree > [data-reveal]:nth-child(3),
+.gridFour > [data-reveal]:nth-child(3) {
+  --reveal-delay: 260ms;
+}
+
+.gridFour > [data-reveal]:nth-child(4) {
+  --reveal-delay: 350ms;
 }
 
 .gridThree {
@@ -273,6 +320,18 @@
   gap: 0.8rem;
 }
 
+.steps > [data-reveal]:nth-child(1) {
+  --reveal-delay: 90ms;
+}
+
+.steps > [data-reveal]:nth-child(2) {
+  --reveal-delay: 180ms;
+}
+
+.steps > [data-reveal]:nth-child(3) {
+  --reveal-delay: 270ms;
+}
+
 .stepItem {
   border: 1px solid rgba(15, 31, 58, 0.1);
   border-radius: 10px;
@@ -364,8 +423,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .heroImageWrap,
-  .track {
+  .track,
+  .heroImage,
+  .heroOrbA,
+  .heroOrbB {
     animation: none;
+    transform: none;
   }
 }
 

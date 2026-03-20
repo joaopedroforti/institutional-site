@@ -79,6 +79,18 @@
   background: linear-gradient(180deg, #f3f8ff 0%, #eaf2ff 100%);
 }
 
+.grid > [data-reveal]:nth-child(1) {
+  --reveal-delay: 90ms;
+}
+
+.grid > [data-reveal]:nth-child(2) {
+  --reveal-delay: 190ms;
+}
+
+.highlight[data-reveal] {
+  --reveal-delay: 180ms;
+}
+
 @media (max-width: 980px) {
   .grid {
     grid-template-columns: 1fr;
