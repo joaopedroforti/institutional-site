@@ -154,27 +154,76 @@
 .footerInner {
   width: min(var(--container-max), calc(100% - 2 * var(--container-pad)));
   margin: 0 auto;
-  padding: 2.1rem 0 2.2rem;
-  text-align: center;
+  padding: 2.2rem 0 1.5rem;
 }
 
-.footerInner h2 {
-  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+.footerTop {
+  display: grid;
+  grid-template-columns: 1.1fr 0.7fr 1fr;
+  gap: 1.6rem;
+}
+
+.footerColumn h2 {
+  font-size: clamp(1.15rem, 1.8vw, 1.55rem);
+  letter-spacing: -0.01em;
   color: #f3f8ff;
 }
 
-.footerInner p {
-  margin: 0.7rem auto 0;
-  max-width: 70ch;
-  font-size: 0.95rem;
+.footerColumn h3 {
+  font-size: 0.96rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #d3e4ff;
+}
+
+.footerColumn p {
+  margin-top: 0.72rem;
+  max-width: 52ch;
+  font-size: 0.93rem;
   color: #d8e8ff;
   line-height: 1.65;
 }
 
-.footerActions {
-  margin-top: 1rem;
-  display: inline-flex;
+.footerLinks,
+.footerMeta {
+  margin-top: 0.72rem;
+  display: grid;
+  gap: 0.48rem;
+}
+
+.footerLinks a,
+.footerMeta a,
+.footerMeta span {
+  color: #d8e8ff;
+  font-size: 0.91rem;
+  line-height: 1.55;
+}
+
+.footerLinks a:hover,
+.footerMeta a:hover {
+  color: #ffffff;
+}
+
+.footerBottom {
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(214, 229, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.6rem;
+  flex-wrap: wrap-reverse;
+}
+
+.footerBottom p {
+  color: #d3e4ff;
+  font-size: 0.84rem;
+}
+
+.footerCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   flex-wrap: wrap;
 }
 
@@ -199,6 +248,24 @@
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.42);
   color: #ffffff;
+}
+
+@media (max-width: 1080px) {
+  .footerTop {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .footerTop {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .footerBottom {
+    margin-top: 1.2rem;
+    padding-top: 0.9rem;
+  }
 }
 
 .whatsappFloat {

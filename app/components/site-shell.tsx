@@ -152,17 +152,48 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
 
       <footer className={`${styles.footer} ${flushFooterGap ? styles.footerFlush : ""}`}>
         <div className={styles.footerInner}>
-          <h2>Sua empresa tem potencial inexplorado.</h2>
-          <p>
-            Ajudamos você a tirar projetos do papel com tecnologia sob medida, execução estruturada e foco em resultado real para o negócio.
-          </p>
-          <div className={styles.footerActions}>
-            <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" className={styles.primaryButton}>
-              Falar no WhatsApp
-            </a>
-            <Link href="/contato" className={styles.secondaryButton}>
-              Solicitar proposta
-            </Link>
+          <div className={styles.footerTop}>
+            <div className={styles.footerColumn}>
+              <h2>FortiCorp</h2>
+              <p>
+                Desenvolvemos sistemas, automações e produtos digitais sob medida para empresas que precisam de tecnologia confiável, escalável e orientada a resultado.
+              </p>
+            </div>
+
+            <div className={styles.footerColumn}>
+              <h3>Navegação</h3>
+              <div className={styles.footerLinks}>
+                {navItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    {item.label}
+                  </Link>
+                ))}
+                <Link href="/contato">Contato</Link>
+              </div>
+            </div>
+
+            <div className={styles.footerColumn}>
+              <h3>Contato</h3>
+              <div className={styles.footerMeta}>
+                <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer">
+                  WhatsApp: +55 (19) 98221-4340
+                </a>
+                <a href="mailto:contato@forticorp.com.br">E-mail: contato@forticorp.com.br</a>
+                <span>Atendimento para projetos, sustentação e evolução de sistemas.</span>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.footerBottom}>
+            <div className={styles.footerCta}>
+              <a href="https://wa.me/5519982214340" target="_blank" rel="noreferrer" className={styles.primaryButton}>
+                Falar no WhatsApp
+              </a>
+              <Link href="/contato" className={styles.secondaryButton}>
+                Solicitar proposta
+              </Link>
+            </div>
+            <p>© {new Date().getFullYear()} FortiCorp. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
