@@ -201,22 +201,27 @@
   margin-top: clamp(3rem, 5vw, 4.8rem);
   padding-top: clamp(1.6rem, 2.8vw, 2.2rem);
   padding-bottom: clamp(1.6rem, 2.8vw, 2.2rem);
-  background: linear-gradient(135deg, #082f63 0%, #0d4d9c 100%);
+  background: linear-gradient(180deg, #f4f9ff 0%, #ecf3ff 100%);
 }
 
 .highlightInner {
-  max-width: 74ch;
+  max-width: 78ch;
+  border: 1px solid rgba(15, 33, 63, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(14, 36, 67, 0.06);
+  padding: clamp(1rem, 2vw, 1.4rem);
 }
 
 .highlightInner h2 {
-  color: #f1f7ff;
+  color: #112f57;
   font-size: clamp(1.55rem, 2.3vw, 2.1rem);
   letter-spacing: -0.015em;
 }
 
 .highlightInner p {
   margin-top: 0.82rem;
-  color: #d4e5ff;
+  color: #5a7398;
   line-height: 1.75;
 }
 

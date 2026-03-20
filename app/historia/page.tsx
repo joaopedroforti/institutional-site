@@ -49,7 +49,7 @@ const principles = [
 
 export default function HistoryPage() {
   return (
-    <SiteShell>
+    <SiteShell flushFooterGap>
       <section className={`${styles.hero} ${styles.head}`} data-reveal>
         <div className={styles.heroInner}>
           <div className={styles.heroContent} data-reveal>

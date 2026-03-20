@@ -147,6 +147,10 @@
   background: linear-gradient(135deg, #09366f 0%, #0d4e9d 100%);
 }
 
+.footerFlush {
+  margin-top: 0;
+}
+
 .footerInner {
   width: min(var(--container-max), calc(100% - 2 * var(--container-pad)));
   margin: 0 auto;

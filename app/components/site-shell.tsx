@@ -9,6 +9,7 @@ import styles from "./site-shell.module.css";
 
 type SiteShellProps = {
   children: ReactNode;
+  flushFooterGap?: boolean;
 };
 
 type NavItem = {
@@ -23,7 +24,7 @@ const navItems: NavItem[] = [
   { href: "/historia", label: "História" },
 ];
 
-export default function SiteShell({ children }: SiteShellProps) {
+export default function SiteShell({ children, flushFooterGap = false }: SiteShellProps) {
   const pathname = usePathname();
   const [scrollOffset, setScrollOffset] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -149,7 +150,7 @@ export default function SiteShell({ children }: SiteShellProps) {
 
       <main className={styles.main}>{children}</main>
 
-      <footer className={styles.footer}>
+      <footer className={`${styles.footer} ${flushFooterGap ? styles.footerFlush : ""}`}>
         <div className={styles.footerInner}>
           <h2>Sua empresa tem potencial inexplorado.</h2>
           <p>
