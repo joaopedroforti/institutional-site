@@ -99,6 +99,18 @@
   background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
 }
 
+.techSection {
+  background: linear-gradient(140deg, #052f6d 0%, #0a448f 100%);
+}
+
+.techSection .kicker {
+  color: #c8ddff;
+}
+
+.techSection .sectionHead h2 {
+  color: #f2f7ff;
+}
+
 .sectionHead h2 {
   margin-top: 0.85rem;
   font-size: clamp(1.55rem, 3vw, 2.7rem);
@@ -202,25 +214,26 @@
 .carousel {
   margin-top: 1.1rem;
   border-radius: 0;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
 .track {
   display: flex;
   width: max-content;
-  animation: slideLoop 22s linear infinite;
+  animation: slideLoop 58s linear infinite;
 }
 
 .logoItem {
   min-width: 160px;
   padding: 1rem 1.1rem;
-  border-right: 1px solid rgba(15, 23, 42, 0.08);
-  color: #355681;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 2rem;
 }
 
 .contactSection {

@@ -1,33 +1,51 @@
 import Image from "next/image";
 import {
+  FaBootstrap,
   FaBriefcase,
   FaCartShopping,
   FaClock,
   FaIndustry,
   FaLock,
   FaMobileScreen,
+  FaNodeJs,
+  FaPhp,
+  FaPython,
+  FaReact,
   FaStore,
+  FaWordpress,
 } from "react-icons/fa6";
+import {
+  SiCss,
+  SiDocker,
+  SiLaravel,
+  SiN8N,
+  SiNextdotjs,
+  SiPostgresql,
+  SiSharp,
+  SiSupabase,
+  SiTailwindcss,
+  SiTypescript,
+} from "react-icons/si";
 import SiteShell from "./components/site-shell";
 import styles from "./home.module.css";
 
 const technologyItems = [
-  "Laravel",
-  "Bootstrap",
-  "Tailwind CSS",
-  "Node.js",
-  "Next.js",
-  "React",
-  "PHP",
-  "CSS",
-  "WordPress",
-  "PostgreSQL",
-  "n8n",
-  "Supabase",
-  "C#",
-  "TypeScript",
-  "Python",
-  "Docker",
+  { label: "Laravel", icon: <SiLaravel aria-hidden="true" /> },
+  { label: "Bootstrap", icon: <FaBootstrap aria-hidden="true" /> },
+  { label: "Tailwind CSS", icon: <SiTailwindcss aria-hidden="true" /> },
+  { label: "Node.js", icon: <FaNodeJs aria-hidden="true" /> },
+  { label: "Next.js", icon: <SiNextdotjs aria-hidden="true" /> },
+  { label: "React", icon: <FaReact aria-hidden="true" /> },
+  { label: "PHP", icon: <FaPhp aria-hidden="true" /> },
+  { label: "CSS", icon: <SiCss aria-hidden="true" /> },
+  { label: "WordPress", icon: <FaWordpress aria-hidden="true" /> },
+  { label: "PostgreSQL", icon: <SiPostgresql aria-hidden="true" /> },
+  { label: "n8n", icon: <SiN8N aria-hidden="true" /> },
+  { label: "Supabase", icon: <SiSupabase aria-hidden="true" /> },
+  { label: "C#", icon: <SiSharp aria-hidden="true" /> },
+  { label: "TypeScript", icon: <SiTypescript aria-hidden="true" /> },
+  { label: "Python", icon: <FaPython aria-hidden="true" /> },
+  { label: "Docker", icon: <SiDocker aria-hidden="true" /> },
 ];
 
 export default function Home() {
@@ -138,7 +156,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={`${styles.section} ${styles.sectionSoftBlue}`}>
+      <section className={`${styles.section} ${styles.techSection}`}>
         <div className={styles.sectionHead}>
           <p className={styles.kicker}>TECNOLOGIAS</p>
           <h2>Stack moderna para performance e escalabilidade</h2>
@@ -146,8 +164,8 @@ export default function Home() {
         <div className={styles.carousel}>
           <div className={styles.track}>
             {loopItems.map((item, index) => (
-              <span className={styles.logoItem} key={`${item}-${index}`}>
-                {item}
+              <span className={styles.logoItem} key={`${item.label}-${index}`} title={item.label} aria-label={item.label}>
+                {item.icon}
               </span>
             ))}
           </div>
