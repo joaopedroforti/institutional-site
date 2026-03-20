@@ -98,7 +98,7 @@ export default function ServicesPage() {
 
   return (
     <SiteShell>
-      <section className={styles.sectionHead}>
+      <section className={`${styles.hero} ${styles.sectionHead}`}>
         <p className={styles.kicker}>SERVIÇOS</p>
         <h1>Desenvolvimento de projetos personalizados para sua empresa</h1>
         <p>

@@ -2,6 +2,13 @@
   margin-top: clamp(0.4rem, 1.2vw, 0.9rem);
 }
 
+.hero {
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f6ff 100%);
+  padding: clamp(1rem, 2.2vw, 1.6rem);
+}
+
 .head h1 {
   font-size: clamp(1.8rem, 3vw, 3rem);
   max-width: 20ch;
@@ -31,11 +38,47 @@
 }
 
 .card {
+  position: relative;
   border-radius: 20px;
   border: 1px solid rgba(15, 23, 42, 0.1);
   background: #ffffff;
   box-shadow: 0 14px 24px rgba(15, 23, 42, 0.05);
   padding: clamp(1rem, 1.8vw, 1.2rem);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.cardLink {
+  display: block;
+}
+
+.cardLink:hover {
+  transform: translateY(-4px);
+  border-color: rgba(15, 109, 219, 0.35);
+  box-shadow: 0 22px 34px rgba(15, 109, 219, 0.14);
+}
+
+.visitAction {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(125deg, #0f6ddb 0%, #199ef0 100%);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.cardLink:hover .visitAction {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .tags {

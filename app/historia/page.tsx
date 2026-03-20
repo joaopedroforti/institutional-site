@@ -5,7 +5,7 @@ import styles from "./historia.module.css";
 export default function HistoryPage() {
   return (
     <SiteShell>
-      <section className={styles.head}>
+      <section className={`${styles.hero} ${styles.head}`}>
         <p className={styles.kicker}>HISTÓRIA</p>
         <h1>Uma trajetória construída com tecnologia, consistência e resultado</h1>
       </section>

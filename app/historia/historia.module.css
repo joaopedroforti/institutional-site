@@ -2,6 +2,13 @@
   margin-top: clamp(0.4rem, 1.2vw, 0.9rem);
 }
 
+.hero {
+  border-radius: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f6ff 100%);
+  padding: clamp(1rem, 2.2vw, 1.6rem);
+}
+
 .head h1 {
   font-size: clamp(1.8rem, 3vw, 3rem);
   color: #123b70;

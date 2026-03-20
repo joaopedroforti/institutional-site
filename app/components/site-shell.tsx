@@ -67,7 +67,6 @@ export default function SiteShell({ children }: SiteShellProps) {
               className={styles.brandLogo}
               priority
             />
-            <span>FortiCorp</span>
           </Link>
           <nav className={styles.nav}>
             {navItems.map((item) => (

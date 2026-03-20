@@ -62,11 +62,6 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: #0f294f;
 }
 
@@ -121,7 +116,7 @@
 
 .main {
   width: min(1320px, calc(100% - 2rem));
-  margin: clamp(1.2rem, 2.2vw, 2rem) auto 0;
+  margin: clamp(1rem, 2vw, 1.8rem) auto 0;
   position: relative;
   z-index: 2;
 }
@@ -129,7 +124,7 @@
 .footer {
   margin-top: clamp(3rem, 6vw, 5rem);
   border-top: 1px solid var(--line);
-  background: #f4f8ff;
+  background: linear-gradient(135deg, #0a3f86 0%, #0f5cbf 100%);
 }
 
 .footerInner {
@@ -141,14 +136,14 @@
 
 .footerInner h2 {
   font-size: clamp(1.05rem, 1.6vw, 1.35rem);
-  color: #17407c;
+  color: #f3f8ff;
 }
 
 .footerInner p {
   margin: 0.65rem auto 0;
   max-width: 70ch;
   font-size: 0.95rem;
-  color: #5d7398;
+  color: #d2e4ff;
   line-height: 1.65;
 }
 
@@ -172,14 +167,14 @@
 }
 
 .primaryButton {
-  background: #0f6ddb;
-  color: #ffffff;
+  background: #ffffff;
+  color: #0d4ba3;
 }
 
 .secondaryButton {
-  background: #e9f2ff;
-  border: 1px solid rgba(15, 109, 219, 0.2);
-  color: #16529e;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  color: #ffffff;
 }
 
 .whatsappFloat {
