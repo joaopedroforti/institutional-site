@@ -1,7 +1,9 @@
 .hero,
 .capabilities,
 .servicesSection,
-.modelSection {
+.modelSection,
+.outcomesSection,
+.ctaSection {
   width: 100vw;
   margin-left: calc(50% - 50vw);
   padding-left: max(var(--container-pad), calc((100vw - var(--container-max)) / 2));
@@ -45,6 +47,55 @@
   color: #556f95;
   line-height: 1.78;
   max-width: 66ch;
+}
+
+.heroHighlights {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.heroHighlights li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #315682;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.heroHighlights svg {
+  flex-shrink: 0;
+  color: #1270d8;
+  font-size: 0.96rem;
+}
+
+.heroStats {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.heroStatItem {
+  border: 1px solid rgba(16, 73, 145, 0.2);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.7rem 0.65rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.heroStatItem strong {
+  color: #0f4f9d;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.heroStatItem span {
+  color: #4f6d96;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .heroActions {
@@ -265,22 +316,105 @@
   line-height: 1.72;
 }
 
+.outcomesSection {
+  margin-top: clamp(3rem, 5vw, 4.8rem);
+  padding-top: clamp(1.8rem, 3vw, 2.8rem);
+  padding-bottom: clamp(1.8rem, 3vw, 2.8rem);
+  background: linear-gradient(180deg, #f6fbff 0%, #edf5ff 100%);
+}
+
+.outcomesGrid {
+  margin-top: 1.3rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.outcomeCard {
+  border-radius: 14px;
+  border: 1px solid rgba(15, 31, 58, 0.1);
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(14, 36, 67, 0.05);
+  padding: 1rem;
+}
+
+.outcomeCard h3 {
+  color: #11335d;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.outcomeCard p {
+  margin-top: 0.62rem;
+  color: #5b7398;
+  line-height: 1.72;
+}
+
+.ctaSection {
+  margin-top: clamp(3rem, 5vw, 4.8rem);
+  margin-bottom: clamp(2rem, 4vw, 3.2rem);
+  padding-top: clamp(1.3rem, 2.6vw, 2rem);
+  padding-bottom: clamp(1.3rem, 2.6vw, 2rem);
+}
+
+.ctaInner {
+  border-radius: 16px;
+  border: 1px solid rgba(14, 70, 148, 0.16);
+  background:
+    radial-gradient(circle at 85% 18%, rgba(26, 128, 231, 0.18) 0%, transparent 42%),
+    linear-gradient(135deg, #e8f2ff 0%, #d8eaff 100%);
+  padding: clamp(1.1rem, 2.2vw, 1.8rem);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: center;
+}
+
+.ctaInner h2 {
+  margin-top: 0.7rem;
+  color: #102f58;
+  font-size: clamp(1.5rem, 2.7vw, 2.3rem);
+  letter-spacing: -0.015em;
+  max-width: 22ch;
+}
+
+.ctaInner p {
+  margin-top: 0.8rem;
+  color: #4f6a90;
+  line-height: 1.72;
+  max-width: 62ch;
+}
+
+.ctaActions {
+  display: inline-flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .capabilities > [data-reveal]:nth-child(1),
 .grid > [data-reveal]:nth-child(1),
-.modelGrid > [data-reveal]:nth-child(1) {
+.modelGrid > [data-reveal]:nth-child(1),
+.outcomesGrid > [data-reveal]:nth-child(1) {
   --reveal-delay: 90ms;
 }
 
 .capabilities > [data-reveal]:nth-child(2),
 .grid > [data-reveal]:nth-child(2),
-.modelGrid > [data-reveal]:nth-child(2) {
+.modelGrid > [data-reveal]:nth-child(2),
+.outcomesGrid > [data-reveal]:nth-child(2) {
   --reveal-delay: 180ms;
 }
 
 .capabilities > [data-reveal]:nth-child(3),
 .grid > [data-reveal]:nth-child(3),
-.modelGrid > [data-reveal]:nth-child(3) {
+.modelGrid > [data-reveal]:nth-child(3),
+.outcomesGrid > [data-reveal]:nth-child(3) {
   --reveal-delay: 270ms;
+}
+
+.outcomesGrid > [data-reveal]:nth-child(4) {
+  --reveal-delay: 360ms;
 }
 
 .grid > [data-reveal]:nth-child(4) {
@@ -306,12 +440,25 @@
 @media (max-width: 1180px) {
   .heroInner,
   .capabilities,
-  .modelGrid {
+  .modelGrid,
+  .ctaInner {
     grid-template-columns: 1fr;
   }
 
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .outcomesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ctaActions {
+    justify-content: flex-start;
+  }
+
+  .heroStats {
+    grid-template-columns: 1fr;
   }
 }
 

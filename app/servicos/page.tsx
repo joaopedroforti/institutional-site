@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   FaArrowRight,
   FaChartLine,
+  FaCheckCircle,
   FaCloudArrowUp,
   FaCode,
   FaComments,
@@ -95,6 +96,31 @@ const operatingModel = [
   },
 ];
 
+const outcomes = [
+  {
+    title: "Mais eficiência operacional",
+    description: "Automação e integração para reduzir tarefas manuais e retrabalho entre áreas.",
+  },
+  {
+    title: "Mais previsibilidade de entrega",
+    description: "Planejamento técnico e acompanhamento constante para manter prazos e qualidade.",
+  },
+  {
+    title: "Mais performance comercial",
+    description: "Sistemas e canais digitais conectados para acelerar atendimento e vendas.",
+  },
+  {
+    title: "Mais segurança e continuidade",
+    description: "Sustentação ativa para manter aplicações estáveis, atualizadas e confiáveis.",
+  },
+];
+
+const heroHighlights = [
+  "Escopo e prioridades definidos junto ao negócio.",
+  "Time técnico sênior com acompanhamento próximo.",
+  "Arquitetura preparada para crescer sem retrabalho.",
+];
+
 export default function ServicesPage() {
   const getColorClass = (colorClass: ServiceCard["colorClass"]) => {
     switch (colorClass) {
@@ -119,10 +145,35 @@ export default function ServicesPage() {
         <div className={styles.heroInner}>
           <article className={styles.heroContent} data-reveal>
             <p className={styles.kicker}>SERVIÇOS</p>
-            <h1>Desenvolvimento de projetos personalizados para sua empresa</h1>
+            <h1>Soluções tecnológicas sob medida para escalar sua operação</h1>
             <p>
-              Profissionais especializados e altamente qualificados, alinhados aos objetivos do cliente, com melhores práticas, metodologias e processos de mercado.
+              Planejamos, desenvolvemos e sustentamos projetos digitais com foco em resultado, prazo realista e evolução contínua do negócio.
             </p>
+
+            <ul className={styles.heroHighlights}>
+              {heroHighlights.map((item) => (
+                <li key={item}>
+                  <FaCheckCircle aria-hidden="true" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className={styles.heroStats}>
+              <article className={styles.heroStatItem}>
+                <strong>8+</strong>
+                <span>frentes de serviço</span>
+              </article>
+              <article className={styles.heroStatItem}>
+                <strong>01 a 03</strong>
+                <span>etapas de diagnóstico e plano</span>
+              </article>
+              <article className={styles.heroStatItem}>
+                <strong>360°</strong>
+                <span>visão de produto, operação e suporte</span>
+              </article>
+            </div>
+
             <div className={styles.heroActions}>
               <Link href="/contato" className={styles.primaryButton}>
                 Solicitar proposta
@@ -137,9 +188,9 @@ export default function ServicesPage() {
           <aside className={styles.heroPanel} data-reveal>
             <h2>Entrega técnica com visão de negócio</h2>
             <ul>
-              <li>Escopo claro e orientado a resultado.</li>
-              <li>Arquitetura preparada para escala e manutenção.</li>
-              <li>Acompanhamento próximo durante toda a execução.</li>
+              <li>Escopo orientado a impacto e metas mensuráveis.</li>
+              <li>Arquitetura preparada para escala, segurança e manutenção.</li>
+              <li>Governança de execução com comunicação próxima ao cliente.</li>
             </ul>
           </aside>
         </div>
@@ -191,6 +242,41 @@ export default function ServicesPage() {
               <p>{step.description}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className={styles.outcomesSection} data-reveal>
+        <div className={styles.sectionHead} data-reveal>
+          <p className={styles.kicker}>RESULTADOS ESPERADOS</p>
+          <h2>O que sua empresa ganha ao evoluir com a FortiCorp</h2>
+        </div>
+
+        <div className={styles.outcomesGrid}>
+          {outcomes.map((item) => (
+            <article className={styles.outcomeCard} key={item.title} data-reveal>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.ctaSection} data-reveal>
+        <div className={styles.ctaInner}>
+          <div>
+            <p className={styles.kicker}>PRÓXIMO PASSO</p>
+            <h2>Vamos estruturar o plano ideal para o seu projeto?</h2>
+            <p>Converse com nosso time para mapear prioridades e receber uma proposta técnica personalizada.</p>
+          </div>
+          <div className={styles.ctaActions}>
+            <Link href="/contato" className={styles.primaryButton}>
+              Solicitar proposta
+              <FaArrowRight aria-hidden="true" />
+            </Link>
+            <Link href="/cases" className={styles.secondaryButton}>
+              Conhecer resultados
+            </Link>
+          </div>
         </div>
       </section>
     </SiteShell>

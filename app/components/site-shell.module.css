@@ -169,6 +169,11 @@
   color: #f3f8ff;
 }
 
+.footerLogo {
+  width: auto;
+  height: 42px;
+}
+
 .footerColumn h3 {
   font-size: 0.96rem;
   text-transform: uppercase;

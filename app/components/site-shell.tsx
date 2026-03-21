@@ -121,12 +121,12 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
         <div className={styles.headerInner}>
           <Link href="/" className={styles.brand}>
             <Image
-              src="/images/logo.png"
+              src="/images/logo/logo.png"
               alt="Logo FortiCorp"
               width={128}
               height={36}
               className={styles.brandLogo}
-              priority
+              preload
             />
           </Link>
           <div className={styles.menuGroup}>
@@ -154,7 +154,13 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
         <div className={styles.footerInner}>
           <div className={styles.footerTop}>
             <div className={styles.footerColumn}>
-              <h2>FortiCorp</h2>
+              <Image
+                src="/images/logo/logo_white.png"
+                alt="Logo FortiCorp em branco"
+                width={162}
+                height={46}
+                className={styles.footerLogo}
+              />
               <p>
                 Desenvolvemos sistemas, automações e produtos digitais sob medida para empresas que precisam de tecnologia confiável, escalável e orientada a resultado.
               </p>
