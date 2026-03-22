@@ -9,6 +9,7 @@ use App\Models\PageVisit;
 use App\Models\VisitorSession;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class LeadAnalyticsService
 {
@@ -121,15 +122,19 @@ class LeadAnalyticsService
             ->orderByDesc('occurred_at')
             ->get();
 
-        $historyEvents = $lead->histories()
-            ->get()
-            ->map(fn (LeadHistory $history) => [
-                'type' => 'lead_history',
-                'event_type' => $history->event_type,
-                'label' => $history->event_label,
-                'at' => $history->occurred_at,
-                'payload' => $history->payload,
-            ]);
+        $historyEvents = collect();
+
+        if (Schema::hasTable('lead_histories')) {
+            $historyEvents = $lead->histories()
+                ->get()
+                ->map(fn (LeadHistory $history) => [
+                    'type' => 'lead_history',
+                    'event_type' => $history->event_type,
+                    'label' => $history->event_label,
+                    'at' => $history->occurred_at,
+                    'payload' => $history->payload,
+                ]);
+        }
 
         $visitTimeline = $visits->map(fn (PageVisit $visit) => [
             'type' => 'page_visit',
@@ -171,6 +176,10 @@ class LeadAnalyticsService
 
     public function refreshLeadScore(ContactRequest $lead): void
     {
+        if (! Schema::hasColumns('contact_requests', ['lead_score', 'score_band'])) {
+            return;
+        }
+
         $metrics = $this->buildLeadMetrics($lead);
         $sessions = $this->resolveSessionsForLead($lead);
         $sessionIds = $sessions->pluck('id')->all();

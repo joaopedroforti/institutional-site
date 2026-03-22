@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class LeadKanbanColumn extends Model
@@ -24,6 +25,8 @@ class LeadKanbanColumn extends Model
 
     public static function seedDefaults(): void
     {
+        $hasIsLockedColumn = Schema::hasColumn('lead_kanban_columns', 'is_locked');
+
         $defaults = [
             ['name' => 'Lead', 'slug' => 'lead', 'color' => '#5b6ef1', 'position' => 0, 'is_default' => true, 'is_locked' => true],
             ['name' => 'Em conversa', 'slug' => 'em-conversa', 'color' => '#52b4ff', 'position' => 1, 'is_default' => false, 'is_locked' => false],
@@ -34,6 +37,10 @@ class LeadKanbanColumn extends Model
         ];
 
         foreach ($defaults as $column) {
+            if (! $hasIsLockedColumn) {
+                unset($column['is_locked']);
+            }
+
             static::query()->updateOrCreate(
                 ['slug' => $column['slug']],
                 $column,

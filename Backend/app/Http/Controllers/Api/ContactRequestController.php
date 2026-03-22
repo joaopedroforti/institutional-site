@@ -10,6 +10,7 @@ use App\Models\VisitorSession;
 use App\Services\LeadAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class ContactRequestController extends Controller
@@ -78,16 +79,18 @@ class ContactRequestController extends Controller
             'metadata' => $payload['metadata'] ?? null,
         ]);
 
-        LeadHistory::query()->create([
-            'contact_request_id' => $contact->id,
-            'event_type' => 'lead_created',
-            'event_label' => 'Lead criado',
-            'payload' => [
-                'source_url' => $contact->source_url,
-                'session_key' => $session?->session_key,
-            ],
-            'occurred_at' => now(),
-        ]);
+        if (Schema::hasTable('lead_histories')) {
+            LeadHistory::query()->create([
+                'contact_request_id' => $contact->id,
+                'event_type' => 'lead_created',
+                'event_label' => 'Lead criado',
+                'payload' => [
+                    'source_url' => $contact->source_url,
+                    'session_key' => $session?->session_key,
+                ],
+                'occurred_at' => now(),
+            ]);
+        }
 
         $leadAnalytics->refreshLeadScore($contact);
 
@@ -124,12 +127,16 @@ class ContactRequestController extends Controller
         $tracking = $leadAnalytics->buildLeadTracking($contactRequest);
         $metrics = $leadAnalytics->buildLeadMetrics($contactRequest);
 
+        $history = Schema::hasTable('lead_histories')
+            ? $contactRequest->histories()->with('actorUser')->get()
+            : [];
+
         return response()->json([
             'data' => [
                 ...$contact->toArray(),
                 'tracking_summary' => $metrics,
                 'tracking' => $tracking,
-                'history' => $contactRequest->histories()->with('actorUser')->get(),
+                'history' => $history,
             ],
         ]);
     }
@@ -176,7 +183,7 @@ class ContactRequestController extends Controller
 
         $changes = $contactRequest->getChanges();
 
-        if (! empty($changes)) {
+        if (! empty($changes) && Schema::hasTable('lead_histories')) {
             LeadHistory::query()->create([
                 'contact_request_id' => $contactRequest->id,
                 'actor_user_id' => $request->user()?->id,

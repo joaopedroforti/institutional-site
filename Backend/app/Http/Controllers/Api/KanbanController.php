@@ -10,6 +10,7 @@ use App\Services\LeadAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class KanbanController extends Controller
 {
@@ -41,14 +42,19 @@ class KanbanController extends Controller
 
         $position = (LeadKanbanColumn::query()->max('position') ?? -1) + 1;
 
-        $column = LeadKanbanColumn::query()->create([
+        $data = [
             'name' => $payload['name'],
             'slug' => LeadKanbanColumn::generateUniqueSlug($payload['name']),
             'color' => $payload['color'] ?? '#5b6ef1',
             'position' => $position,
             'is_default' => false,
-            'is_locked' => false,
-        ]);
+        ];
+
+        if (Schema::hasColumn('lead_kanban_columns', 'is_locked')) {
+            $data['is_locked'] = false;
+        }
+
+        $column = LeadKanbanColumn::query()->create($data);
 
         return response()->json([
             'data' => $column,
@@ -57,7 +63,7 @@ class KanbanController extends Controller
 
     public function updateColumn(Request $request, LeadKanbanColumn $leadKanbanColumn): JsonResponse
     {
-        if ($leadKanbanColumn->is_locked) {
+        if (Schema::hasColumn('lead_kanban_columns', 'is_locked') && $leadKanbanColumn->is_locked) {
             return response()->json([
                 'message' => 'Esta etapa e fixa e nao pode ser editada.',
             ], 422);
@@ -94,7 +100,7 @@ class KanbanController extends Controller
     {
         LeadKanbanColumn::seedDefaults();
 
-        if ($leadKanbanColumn->is_locked) {
+        if (Schema::hasColumn('lead_kanban_columns', 'is_locked') && $leadKanbanColumn->is_locked) {
             return response()->json([
                 'message' => 'Esta etapa e fixa e nao pode ser removida.',
             ], 422);
@@ -191,17 +197,19 @@ class KanbanController extends Controller
         $freshContact = $contactRequest->fresh(['visitorSession', 'kanbanColumn']);
         $leadAnalytics->refreshLeadScore($freshContact);
 
-        LeadHistory::query()->create([
-            'contact_request_id' => $contactRequest->id,
-            'actor_user_id' => $request->user()?->id,
-            'event_type' => 'kanban_moved',
-            'event_label' => 'Lead movido no kanban',
-            'payload' => [
-                'from' => $fromColumn,
-                'to' => $freshContact->kanbanColumn?->name ?? $freshContact->status,
-            ],
-            'occurred_at' => now(),
-        ]);
+        if (Schema::hasTable('lead_histories')) {
+            LeadHistory::query()->create([
+                'contact_request_id' => $contactRequest->id,
+                'actor_user_id' => $request->user()?->id,
+                'event_type' => 'kanban_moved',
+                'event_label' => 'Lead movido no kanban',
+                'payload' => [
+                    'from' => $fromColumn,
+                    'to' => $freshContact->kanbanColumn?->name ?? $freshContact->status,
+                ],
+                'occurred_at' => now(),
+            ]);
+        }
 
         return response()->json([
             'data' => $freshContact,

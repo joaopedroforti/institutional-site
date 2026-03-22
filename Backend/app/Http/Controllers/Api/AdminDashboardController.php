@@ -7,6 +7,7 @@ use App\Models\ContactRequest;
 use App\Models\InteractionEvent;
 use App\Models\PageVisit;
 use App\Models\VisitorSession;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -54,16 +55,27 @@ class AdminDashboardController extends Controller
             ->get();
 
         $topSources = VisitorSession::query()
-            ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(utm, '$.utm_source')) as source, COUNT(*) as total")
             ->whereNotNull('utm')
+            ->get()
+            ->map(function (VisitorSession $session): array {
+                $utm = is_array($session->utm) ? $session->utm : [];
+                $source = $utm['utm_source'] ?? 'direto';
+
+                return [
+                    'source' => $source,
+                ];
+            })
             ->groupBy('source')
-            ->orderByDesc('total')
-            ->limit(5)
-            ->get();
+            ->map(fn ($rows, $source) => ['source' => $source, 'total' => count($rows)])
+            ->sortByDesc('total')
+            ->take(5)
+            ->values();
 
         $proposalAccesses = InteractionEvent::query()
             ->whereIn('event_type', ['proposal_open', 'proposal_reopen', 'proposal_view'])
             ->count();
+
+        $hasScoreBandColumn = Schema::hasColumn('contact_requests', 'score_band');
 
         return response()->json([
             'summary' => [
@@ -74,9 +86,9 @@ class AdminDashboardController extends Controller
                 'page_views_total' => PageVisit::query()->count(),
                 'interactions_total' => InteractionEvent::query()->count(),
                 'proposal_accesses_total' => $proposalAccesses,
-                'leads_hot' => ContactRequest::query()->where('score_band', 'hot')->count(),
-                'leads_warm' => ContactRequest::query()->where('score_band', 'warm')->count(),
-                'leads_cold' => ContactRequest::query()->where('score_band', 'cold')->count(),
+                'leads_hot' => $hasScoreBandColumn ? ContactRequest::query()->where('score_band', 'hot')->count() : 0,
+                'leads_warm' => $hasScoreBandColumn ? ContactRequest::query()->where('score_band', 'warm')->count() : 0,
+                'leads_cold' => $hasScoreBandColumn ? ContactRequest::query()->where('score_band', 'cold')->count() : 0,
             ],
             'daily_sessions' => $dailySessions,
             'top_pages' => $topPages,
