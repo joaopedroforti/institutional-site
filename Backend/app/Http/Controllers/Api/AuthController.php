@@ -34,6 +34,7 @@ class AuthController extends Controller
         ])->save();
 
         $token = $user->createToken('superadmin-panel');
+        $roles = $user->roles();
 
         return response()->json([
             'token' => $token->plainTextToken,
@@ -42,7 +43,8 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'role' => $user->is_super_admin ? 'admin' : 'seller',
+                'role' => $roles[0] ?? 'seller',
+                'roles' => $roles,
             ],
         ]);
     }

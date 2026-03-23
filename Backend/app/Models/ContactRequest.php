@@ -20,7 +20,11 @@ class ContactRequest extends Model
         'message',
         'internal_notes',
         'status',
+        'pipeline',
         'lead_order',
+        'stage_entered_at',
+        'lost_reason',
+        'deal_value',
         'lead_score',
         'score_band',
         'source_url',
@@ -35,6 +39,8 @@ class ContactRequest extends Model
         return [
             'contacted_at' => 'datetime',
             'last_activity_at' => 'datetime',
+            'stage_entered_at' => 'datetime',
+            'deal_value' => 'decimal:2',
             'lead_score' => 'integer',
             'metadata' => 'array',
         ];

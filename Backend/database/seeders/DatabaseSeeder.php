@@ -26,6 +26,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'jpedroforti@forticorp.com.br',
             'password' => Hash::make('18241214'),
             'is_super_admin' => true,
+            'is_admin' => true,
+            'is_seller' => true,
         ]);
     }
 }

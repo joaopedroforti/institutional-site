@@ -9,6 +9,7 @@ use App\Models\PageVisit;
 use App\Models\VisitorSession;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class LeadAnalyticsService
@@ -215,6 +216,7 @@ class LeadAnalyticsService
         $score += min($events->where('event_type', 'contact_form_submit')->count() * 10, 20);
         $score += min($events->where('event_type', 'whatsapp_click')->count() * 8, 16);
         $score += min($events->where('event_type', 'cta_click')->count() * 4, 12);
+        $score += $this->resolveOnboardingDeadlineBonus($lead);
 
         if ($metrics['total_page_views'] <= 1 && $events->count() === 0) {
             $score = max($score - 5, 0);
@@ -233,6 +235,56 @@ class LeadAnalyticsService
             'score_band' => $band,
             'last_activity_at' => $metrics['last_access_at'] ?? now(),
         ])->save();
+    }
+
+    private function resolveOnboardingDeadlineBonus(ContactRequest $lead): int
+    {
+        $metadata = is_array($lead->metadata) ? $lead->metadata : [];
+        $onboardingInternal = is_array($metadata['onboarding_internal'] ?? null) ? $metadata['onboarding_internal'] : null;
+        $onboarding = is_array($metadata['onboarding'] ?? null) ? $metadata['onboarding'] : null;
+        $answers = is_array($onboarding['answers'] ?? null) ? $onboarding['answers'] : [];
+
+        $days = isset($onboardingInternal['internal_days']) ? (int) $onboardingInternal['internal_days'] : null;
+        $selection = isset($onboardingInternal['selection_key'])
+            ? (string) $onboardingInternal['selection_key']
+            : (isset($answers['siteDeadline']) ? (string) $answers['siteDeadline'] : null);
+
+        $defaults = [
+            'urgente' => 4,
+            'mes' => 20,
+            '30-60' => 40,
+            'sem-pressa' => 100,
+        ];
+
+        $map = $defaults;
+
+        if (Schema::hasTable('onboarding_deadline_settings')) {
+            $rows = DB::table('onboarding_deadline_settings')->get(['option_key', 'internal_days']);
+            foreach ($rows as $row) {
+                $map[(string) $row->option_key] = (int) $row->internal_days;
+            }
+        }
+
+        if ($days === null && $selection && isset($map[$selection])) {
+            $days = (int) $map[$selection];
+        }
+
+        if ($days === null || $days <= 0) {
+            return 0;
+        }
+
+        $values = array_values($map);
+        $minDays = min($values);
+        $maxDays = max($values);
+
+        if ($maxDays <= $minDays) {
+            return 0;
+        }
+
+        $normalized = ($maxDays - $days) / ($maxDays - $minDays);
+        $bonus = (int) round($normalized * 20);
+
+        return max(0, min(20, $bonus));
     }
 
     public function refreshLeadsBySession(VisitorSession $session): void

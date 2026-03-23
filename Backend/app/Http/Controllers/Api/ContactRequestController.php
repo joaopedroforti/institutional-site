@@ -8,6 +8,7 @@ use App\Models\LeadHistory;
 use App\Models\LeadKanbanColumn;
 use App\Models\VisitorSession;
 use App\Services\LeadAnalyticsService;
+use App\Services\LeadDistributionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,11 @@ use Illuminate\Validation\ValidationException;
 
 class ContactRequestController extends Controller
 {
-    public function store(Request $request, LeadAnalyticsService $leadAnalytics): JsonResponse
+    public function store(
+        Request $request,
+        LeadAnalyticsService $leadAnalytics,
+        LeadDistributionService $leadDistribution,
+    ): JsonResponse
     {
         $payload = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -61,6 +66,7 @@ class ContactRequestController extends Controller
 
         $defaultColumn = LeadKanbanColumn::defaultColumn();
         $nextOrder = ContactRequest::query()
+            ->where('pipeline', $defaultColumn->pipeline)
             ->where('lead_kanban_column_id', $defaultColumn->id)
             ->max('lead_order');
 
@@ -73,7 +79,9 @@ class ContactRequestController extends Controller
             'company' => $payload['company'] ?? null,
             'message' => $payload['message'] ?? '',
             'status' => $defaultColumn->slug,
+            'pipeline' => $defaultColumn->pipeline,
             'lead_order' => ($nextOrder ?? -1) + 1,
+            'stage_entered_at' => now(),
             'source_url' => $payload['source_url'] ?? null,
             'referrer' => $payload['referrer'] ?? null,
             'metadata' => $payload['metadata'] ?? null,
@@ -92,6 +100,7 @@ class ContactRequestController extends Controller
             ]);
         }
 
+        $leadDistribution->assignLead($contact);
         $leadAnalytics->refreshLeadScore($contact);
 
         return response()->json([
@@ -171,6 +180,19 @@ class ContactRequestController extends Controller
             ]);
         }
 
+        // Responsavel atual e de fechamento devem permanecer sincronizados no fluxo atual.
+        if (array_key_exists('assigned_user_id', $payload) && ! array_key_exists('responsible_closer_user_id', $payload)) {
+            $payload['responsible_closer_user_id'] = $payload['assigned_user_id'];
+        }
+
+        if (array_key_exists('responsible_closer_user_id', $payload) && ! array_key_exists('assigned_user_id', $payload)) {
+            $payload['assigned_user_id'] = $payload['responsible_closer_user_id'];
+        }
+
+        if (array_key_exists('assigned_user_id', $payload) && array_key_exists('responsible_closer_user_id', $payload)) {
+            $payload['responsible_closer_user_id'] = $payload['assigned_user_id'];
+        }
+
         $original = $contactRequest->only([
             'status',
             'assigned_user_id',
@@ -201,5 +223,41 @@ class ContactRequestController extends Controller
         return response()->json([
             'data' => $contactRequest->fresh(['visitorSession', 'kanbanColumn', 'assignedUser', 'responsibleCloserUser']),
         ]);
+    }
+
+    public function addInternalNote(Request $request, ContactRequest $contactRequest): JsonResponse
+    {
+        $payload = $request->validate([
+            'note' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $note = trim($payload['note']);
+
+        if ($note === '') {
+            throw ValidationException::withMessages([
+                'note' => ['Informe uma anotacao valida.'],
+            ]);
+        }
+
+        if (! Schema::hasTable('lead_histories')) {
+            return response()->json([
+                'message' => 'Historico indisponivel para registrar anotacoes.',
+            ], 422);
+        }
+
+        LeadHistory::query()->create([
+            'contact_request_id' => $contactRequest->id,
+            'actor_user_id' => $request->user()?->id,
+            'event_type' => 'internal_note_added',
+            'event_label' => 'Anotacao interna adicionada',
+            'payload' => [
+                'note' => $note,
+            ],
+            'occurred_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Anotacao registrada com sucesso.',
+        ], 201);
     }
 }
