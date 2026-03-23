@@ -1816,7 +1816,7 @@ export default function PipesPage() {
                       className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
                     >
                       <XCircle size={16} />
-                      Reprovar
+                      Perder
                     </button>
                     <button
                       type="button"
@@ -1831,7 +1831,7 @@ export default function PipesPage() {
                       className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
                     >
                       <CheckCircle2 size={16} />
-                      Aprovar
+                      Ganhar
                     </button>
                   </>
                 )}

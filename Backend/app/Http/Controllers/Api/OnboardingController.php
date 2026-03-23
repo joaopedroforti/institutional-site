@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ContactRequest;
 use App\Models\LeadHistory;
 use App\Models\LeadKanbanColumn;
+use App\Services\BudgetService;
 use App\Services\LeadAnalyticsService;
 use App\Services\LeadDistributionService;
 use Illuminate\Http\JsonResponse;
@@ -55,6 +56,7 @@ class OnboardingController extends Controller
         Request $request,
         LeadDistributionService $leadDistribution,
         LeadAnalyticsService $leadAnalytics,
+        BudgetService $budgetService,
     ): JsonResponse {
         $payload = $request->validate([
             'lead_id' => ['nullable', 'integer', 'exists:contact_requests,id'],
@@ -165,6 +167,11 @@ class OnboardingController extends Controller
             );
         }
 
+        if ($payload['project_type'] === 'site') {
+            $budgetService->createOrUpdateAutomaticSiteBudget($contact, $metadataPayload, $internalDeadline);
+            $this->moveLeadToBudgetColumn($contact);
+        }
+
         $leadAnalytics->refreshLeadScore($contact);
 
         return response()->json([
@@ -241,5 +248,37 @@ class OnboardingController extends Controller
             'expected_due_date' => now()->copy()->addWeekdays($days)->toDateString(),
             'calculated_at' => now()->toIso8601String(),
         ];
+    }
+
+    private function moveLeadToBudgetColumn(ContactRequest $contact): void
+    {
+        $targetColumn = LeadKanbanColumn::findByPipelineAndSlug(LeadKanbanColumn::PIPE_COMERCIAL, 'orcamento');
+        if (! $targetColumn) {
+            return;
+        }
+
+        $nextOrder = ContactRequest::query()
+            ->where('pipeline', LeadKanbanColumn::PIPE_COMERCIAL)
+            ->where('lead_kanban_column_id', $targetColumn->id)
+            ->max('lead_order');
+
+        $contact->forceFill([
+            'status' => $targetColumn->slug,
+            'pipeline' => LeadKanbanColumn::PIPE_COMERCIAL,
+            'lead_kanban_column_id' => $targetColumn->id,
+            'lead_order' => ($nextOrder ?? -1) + 1,
+            'stage_entered_at' => now(),
+        ])->save();
+
+        $this->createHistory(
+            $contact->id,
+            null,
+            'lead_moved_to_budget',
+            'Lead movido automaticamente para Orcamento',
+            [
+                'column_id' => $targetColumn->id,
+                'column_slug' => $targetColumn->slug,
+            ],
+        );
     }
 }

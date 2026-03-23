@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactRequestController;
 use App\Http\Controllers\Api\KanbanController;
 use App\Http\Controllers\Api\OnboardingController;
+use App\Http\Controllers\Api\BudgetController;
+use App\Http\Controllers\Api\PublicProposalController;
 use App\Http\Controllers\Api\SellerController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +23,9 @@ Route::prefix('auth')->group(function (): void {
 Route::post('/contacts', [ContactRequestController::class, 'store']);
 Route::post('/onboarding/progress', [OnboardingController::class, 'progress']);
 Route::post('/onboarding/submit', [OnboardingController::class, 'submit']);
+Route::get('/proposals/{slug}', [PublicProposalController::class, 'show']);
+Route::post('/proposals/{slug}/approve', [PublicProposalController::class, 'approve']);
+Route::post('/proposals/{slug}/request-adjustment', [PublicProposalController::class, 'requestAdjustment']);
 
 Route::prefix('analytics')->group(function (): void {
     Route::post('/session', [AnalyticsController::class, 'syncSession']);
@@ -42,6 +47,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::patch('/sellers/distribution/settings', [SellerController::class, 'updateDistribution']);
     Route::patch('/sellers/onboarding/deadlines', [SellerController::class, 'updateOnboardingDeadlines']);
     Route::patch('/sellers/{user}', [SellerController::class, 'update']);
+    Route::get('/budgets', [BudgetController::class, 'index']);
+    Route::patch('/notifications/{adminNotification}/read', [BudgetController::class, 'markNotificationAsRead']);
     Route::get('/pipes', [KanbanController::class, 'pipes']);
     Route::get('/kanban', [KanbanController::class, 'board']);
     Route::post('/kanban/leads', [KanbanController::class, 'storeLead']);

@@ -18,7 +18,14 @@ function extractInteractionLabel(target: HTMLElement) {
 export default function AnalyticsProvider() {
   const pathname = usePathname();
 
+  const isInternalView = () =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("internal") === "1";
+
   const registerClick = useEffectEvent((target: HTMLElement) => {
+    if (isInternalView()) {
+      return;
+    }
+
     const element = target.tagName.toLowerCase();
     const href = target.getAttribute("href") ?? "";
     const explicitEventType = target.getAttribute("data-track-event");
@@ -43,6 +50,10 @@ export default function AnalyticsProvider() {
   });
 
   useEffect(() => {
+    if (isInternalView()) {
+      return;
+    }
+
     void trackPageView(pathname).catch(() => {
       // A home nao deve quebrar se a API de analytics estiver indisponivel.
     });

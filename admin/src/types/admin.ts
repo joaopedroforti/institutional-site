@@ -152,3 +152,42 @@ export type SellersResponse = {
     onboarding_deadlines: OnboardingDeadlineSetting[];
   };
 };
+
+export type BudgetRecord = {
+  id: number;
+  identifier: string;
+  slug: string;
+  status: string;
+  project_type: string;
+  title: string;
+  valid_until: string | null;
+  internal_due_date: string | null;
+  internal_deadline_days: number | null;
+  total_amount: string | number;
+  entry_amount: string | number;
+  adjustment_message: string | null;
+  contact_request_id: number;
+  client_name: string;
+  client_company: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminNotificationRecord = {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  payload?: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type BudgetsResponse = {
+  data: {
+    budgets: BudgetRecord[];
+    notifications: AdminNotificationRecord[];
+  };
+};
