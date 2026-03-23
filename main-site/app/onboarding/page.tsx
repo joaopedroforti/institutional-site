@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import SiteShell from "../components/site-shell";
 import { ApiError, apiFetch } from "../lib/api";
-import { getStoredVisitorSessionKey } from "../lib/analytics";
+import { getPageLabel, getStoredVisitorSessionKey, trackInteraction } from "../lib/analytics";
 import styles from "./onboarding.module.css";
 
 type ProjectType = "site" | "sistema" | "automacao";
@@ -437,6 +437,17 @@ export default function OnboardingPage() {
       email: params.get("email") ?? prev.email,
       phone: params.get("phone") ?? prev.phone,
     }));
+
+    const projectTypeParam = params.get("project_type");
+    if (projectTypeParam === "site" || projectTypeParam === "sistema" || projectTypeParam === "automacao") {
+      const forcedType = projectTypeParam as ProjectType;
+      setProjectType(forcedType);
+
+      const forcedStep = params.get("step");
+      if (forcedStep && FLOW_STEPS[forcedType].includes(forcedStep as StepId)) {
+        setCurrentStep(forcedStep as ScreenId);
+      }
+    }
   }, []);
 
   const goToStep = useCallback(
@@ -618,6 +629,17 @@ export default function OnboardingPage() {
           source_url: typeof window !== "undefined" ? window.location.href : null,
           referrer: typeof document !== "undefined" ? document.referrer || null : null,
         }),
+      });
+
+      await trackInteraction({
+        eventType: "onboarding_form_submit",
+        element: "form",
+        label: projectType,
+        pagePath: "/onboarding",
+        metadata: {
+          event_name: "Enviou formulario onboarding",
+          where: getPageLabel("/onboarding"),
+        },
       });
 
       setSubmitted(true);
@@ -868,16 +890,17 @@ export default function OnboardingPage() {
                 placeholder="Qual sistema e qual funcionalidade deseja integrar?"
               />
               <p className={styles.counter}>{answers.systemIntegrationDetails.length}/500</p>
-              <div className={styles.actions}>
-                <button type="button" className={styles.buttonGhost} onClick={goBack}>
-                  <ArrowLeft size={16} /> Voltar
-                </button>
-                <button type="button" className={styles.buttonPrimary} onClick={handleContinue}>
-                  Continuar <ArrowRight size={16} />
-                </button>
-              </div>
             </>
           )}
+
+          <div className={styles.actions}>
+            <button type="button" className={styles.buttonGhost} onClick={goBack}>
+              <ArrowLeft size={16} /> Voltar
+            </button>
+            <button type="button" className={styles.buttonPrimary} onClick={handleContinue}>
+              Continuar <ArrowRight size={16} />
+            </button>
+          </div>
         </div>
       );
     }

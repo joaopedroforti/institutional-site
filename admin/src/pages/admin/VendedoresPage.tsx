@@ -1,11 +1,10 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, X } from "lucide-react";
 import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
 import type {
   DistributionSettings,
-  OnboardingDeadlineSetting,
   SellerRecord,
   SellersResponse,
 } from "../../types/admin";
@@ -56,14 +55,13 @@ export default function VendedoresPage() {
   const [error, setError] = useState<string | null>(null);
   const [sellers, setSellers] = useState<SellerRecord[]>([]);
   const [distDraft, setDistDraft] = useState<DistributionSettings | null>(null);
-  const [onboardingDeadlineDraft, setOnboardingDeadlineDraft] = useState<OnboardingDeadlineSetting[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSellerId, setEditingSellerId] = useState<number | null>(null);
   const [form, setForm] = useState<SellerForm>(initialForm);
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!token) {
       return;
     }
@@ -75,17 +73,16 @@ export default function VendedoresPage() {
       const response = await apiRequest<SellersResponse>("/api/admin/sellers", {}, token);
       setSellers(response.data.sellers);
       setDistDraft(response.data.distribution);
-      setOnboardingDeadlineDraft(response.data.onboarding_deadlines ?? []);
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel carregar vendedores.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     void load();
-  }, [token]);
+  }, [load]);
 
   const resetForm = () => {
     setForm(initialForm);
@@ -191,37 +188,6 @@ export default function VendedoresPage() {
       await load();
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel salvar distribuicao.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const saveOnboardingDeadlines = async () => {
-    if (!token || onboardingDeadlineDraft.length === 0) {
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-
-    try {
-      await apiRequest(
-        "/api/admin/sellers/onboarding/deadlines",
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            deadlines: onboardingDeadlineDraft.map((item) => ({
-              option_key: item.option_key,
-              internal_days: Number(item.internal_days),
-            })),
-          }),
-        },
-        token,
-      );
-
-      await load();
-    } catch (requestError) {
-      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel salvar prazos internos.");
     } finally {
       setSaving(false);
     }
@@ -350,45 +316,6 @@ export default function VendedoresPage() {
             </label>
           </div>
         )}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900">Prazos internos do onboarding (site)</h3>
-          <button
-            type="button"
-            onClick={saveOnboardingDeadlines}
-            disabled={saving || onboardingDeadlineDraft.length === 0}
-            className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
-            Salvar prazos
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {onboardingDeadlineDraft.map((item) => (
-            <label key={item.option_key} className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700">
-              <span className="mb-1 block text-xs text-slate-500">{item.label}</span>
-              <input
-                type="number"
-                min={1}
-                max={365}
-                value={Number(item.internal_days)}
-                onChange={(event) =>
-                  setOnboardingDeadlineDraft((prev) =>
-                    prev.map((deadline) =>
-                      deadline.option_key === item.option_key
-                        ? { ...deadline, internal_days: Number(event.target.value) }
-                        : deadline,
-                    ),
-                  )
-                }
-                className="w-full rounded-md border border-slate-300 px-2 py-1.5"
-              />
-              <span className="mt-1 block text-xs text-slate-500">dias uteis internos</span>
-            </label>
-          ))}
-        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">

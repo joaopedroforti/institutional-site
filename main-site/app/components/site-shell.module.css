@@ -296,6 +296,86 @@
   transform: translateY(-3px) scale(1.04);
 }
 
+.whatsModalWrap {
+  position: fixed;
+  right: 1.6rem;
+  bottom: 6.4rem;
+  z-index: 70;
+}
+
+.whatsModal {
+  width: min(320px, calc(100vw - 2rem));
+  border-radius: 16px;
+  border: 1px solid #d7e4f8;
+  background: #ffffff;
+  box-shadow: 0 18px 35px rgba(17, 52, 95, 0.2);
+  padding: 0.8rem;
+}
+
+.whatsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.whatsHeader p {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #113968;
+}
+
+.whatsClose {
+  border: none;
+  background: transparent;
+  color: #4f6f98;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.whatsSub {
+  margin-top: 0.28rem;
+  color: #617da1;
+  font-size: 0.8rem;
+}
+
+.whatsInput {
+  width: 100%;
+  margin-top: 0.55rem;
+  border-radius: 10px;
+  border: 1px solid #c9d9f2;
+  padding: 0.58rem 0.68rem;
+  font-size: 0.88rem;
+  color: #183d6a;
+}
+
+.whatsInput:focus {
+  outline: none;
+  border-color: #0f6ddb;
+  box-shadow: 0 0 0 3px rgba(15, 109, 219, 0.14);
+}
+
+.whatsSubmit {
+  margin-top: 0.65rem;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(125deg, #0caf5f 0%, #1dcb75 100%);
+  color: #ffffff;
+  padding: 0.58rem 0.7rem;
+  font-size: 0.87rem;
+  font-weight: 700;
+}
+
+.whatsSubmit:disabled {
+  opacity: 0.65;
+}
+
+.whatsError {
+  margin-top: 0.4rem;
+  color: #b32626;
+  font-size: 0.78rem;
+}
+
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(11, 191, 104, 0.45);
@@ -332,6 +412,11 @@
 
   .nav {
     justify-content: flex-end;
+  }
+
+  .whatsModalWrap {
+    right: 1rem;
+    bottom: 6rem;
   }
 }
 

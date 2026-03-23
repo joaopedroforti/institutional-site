@@ -1,112 +1,483 @@
 .wrapper {
-  padding: clamp(1.2rem, 2.4vw, 2rem) 0 3rem;
+  padding: clamp(1.1rem, 2vw, 1.8rem) 0 3.2rem;
 }
 
 .stack {
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .heroCard,
 .block,
 .finalCard {
-  border: 1px solid #dce6f7;
+  border: 1px solid #d7e3f5;
   background: #ffffff;
-  border-radius: 18px;
-  padding: 1rem;
+  border-radius: 20px;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  box-shadow: 0 16px 34px -28px rgba(12, 43, 86, 0.4);
+  animation: cardIn 0.35s ease-out;
+}
+
+.heroCard {
+  background:
+    radial-gradient(circle at 18% -20%, rgba(34, 95, 185, 0.2), transparent 34%),
+    linear-gradient(135deg, #f9fcff 0%, #ffffff 50%, #f6f9ff 100%);
+}
+
+.heroTop {
+  max-width: 54rem;
+}
+
+.heroTop h1 {
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
+  letter-spacing: -0.02em;
+}
+
+.heroActions {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.heroActions button {
+  border-radius: 999px;
+  border: 1px solid #cad9f5;
+  background: #fff;
+  color: #20447b;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+
+.heroActions button:first-child {
+  background: #1f5ebf;
+  border-color: #1f5ebf;
+  color: #fff;
+}
+
+.heroActions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -16px rgba(30, 74, 150, 0.6);
+}
+
+.heroActions button:first-child:hover {
+  background: #1a54ab;
+}
+
+.approvedBadge {
+  margin-top: 0.75rem;
+  width: fit-content;
+  border: 1px solid #bfe8d0;
+  background: #ecfbf2;
+  color: #0f6b3d;
+  border-radius: 999px;
+  padding: 0.38rem 0.78rem;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .tag {
   display: inline-flex;
   border-radius: 999px;
-  background: #eaf3ff;
-  color: #0e5fbe;
-  font-size: 0.73rem;
+  background: #ebf3ff;
+  color: #124d99;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.23rem 0.55rem;
+  padding: 0.24rem 0.62rem;
+  letter-spacing: 0.02em;
 }
 
 .heroCard h1,
 .block h2,
 .block h3,
 .finalCard h3 {
-  margin-top: 0.45rem;
-  color: #112645;
+  margin-top: 0.48rem;
+  color: #0f274a;
 }
 
 .heroCard p,
 .legend,
 .block p,
 .finalCard p {
-  margin-top: 0.35rem;
-  color: #526988;
-  font-size: 0.92rem;
-  line-height: 1.55;
+  margin-top: 0.4rem;
+  color: #4c6487;
+  font-size: 0.93rem;
+  line-height: 1.62;
 }
 
 .heroMetrics {
-  margin-top: 0.8rem;
+  margin-top: 1rem;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
 }
 
 .metricCard,
 .infoCard {
-  border: 1px solid #dfe8f8;
-  background: #f9fcff;
-  border-radius: 12px;
-  padding: 0.72rem;
+  border: 1px solid #dbe6f9;
+  background: #fbfdff;
+  border-radius: 14px;
+  padding: 0.76rem 0.8rem;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.metricCard:hover,
+.infoCard:hover {
+  transform: translateY(-2px);
+  border-color: #bdd1f2;
+  box-shadow: 0 14px 28px -20px rgba(40, 80, 140, 0.5);
 }
 
 .metricCard p,
 .infoCard p {
   margin: 0;
-  font-size: 0.77rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  color: #5d7394;
 }
 
 .metricCard strong,
 .infoCard strong {
   display: block;
-  margin-top: 0.35rem;
-  color: #0d2e59;
-  font-size: 0.99rem;
+  margin-top: 0.38rem;
+  color: #123564;
+  font-size: 1rem;
+  line-height: 1.38;
+}
+
+.metricDiscount {
+  display: block;
+  margin-top: 0.42rem;
+  border: 1px solid #cce7d8;
+  background: #f2fcf6;
+  color: #17603d;
+  border-radius: 10px;
+  padding: 0.38rem 0.52rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .gridCards {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.sectionHeader h3 {
+  margin-top: 0;
+}
+
+.softTag {
+  border-radius: 999px;
+  background: #f4f8ff;
+  border: 1px solid #dce8fc;
+  color: #3f5f8f;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.58rem;
+}
+
+.highlightGrid {
+  margin-top: 0.86rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.highlightCard {
+  border: 1px solid #d8e5fb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f9fcff, #ffffff);
+  padding: 0.85rem;
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+.highlightCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px -22px rgba(30, 86, 176, 0.5);
+}
+
+.highlightCard svg {
+  color: #2f67bb;
+}
+
+.highlightCard h4 {
+  margin-top: 0.5rem;
+  color: #0f2f5d;
+  font-size: 1rem;
+}
+
+.highlightCard p {
+  margin-top: 0.42rem;
+}
+
+.timeline {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.timelineItem {
+  border: 1px solid #dae6fa;
+  border-radius: 14px;
+  background: #fbfdff;
+  padding: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.timelineItem::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(50, 116, 208, 0.1), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.timelineItem:hover::after {
+  opacity: 1;
+}
+
+.timelineBadge {
+  display: inline-flex;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  background: #1d5fc3;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.timelineItem h4 {
+  margin-top: 0.6rem;
+  color: #14335f;
+}
+
+.timelineItem p {
+  margin-top: 0.42rem;
+  font-size: 0.86rem;
+}
+
+.investmentCard {
+  margin-top: 0.84rem;
+  border: 1px solid #d7e5fb;
+  border-radius: 14px;
+  background: #f9fcff;
+  padding: 0.9rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.72rem;
+  align-items: center;
+}
+
+.investmentCard svg {
+  color: #2065c6;
+}
+
+.investmentCard h4 {
+  color: #11335f;
+  font-size: 1rem;
+}
+
+.investmentCard p {
+  margin-top: 0.3rem;
+  font-size: 0.87rem;
+}
+
+.investmentCard strong {
+  color: #113c78;
+  font-size: 1.15rem;
+}
+
+.premissasGrid {
   margin-top: 0.8rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
+  gap: 0.72rem;
+}
+
+.extraCostsGrid {
+  margin-top: 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.extraCostCard {
+  border: 1px solid #dae7fb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+  padding: 0.85rem;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.extraCostCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px -22px rgba(29, 91, 180, 0.6);
+}
+
+.extraCostCard h4 {
+  color: #123864;
+  font-size: 1rem;
+}
+
+.extraCostCard strong {
+  display: block;
+  margin-top: 0.42rem;
+  color: #0f3770;
+  font-size: 1.02rem;
+}
+
+.extraCostCard p {
+  margin-top: 0.44rem;
+  font-size: 0.88rem;
+}
+
+.premissasCard {
+  border: 1px solid #dae6fa;
+  border-radius: 14px;
+  padding: 0.72rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  background: #fff;
+}
+
+.premissasCard svg {
+  color: #2b63b7;
+  margin-top: 0.2rem;
+}
+
+.premissasCard p {
+  margin-top: 0;
+  font-size: 0.88rem;
+}
+
+.whatsappLink {
+  margin-top: 0.86rem;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: #1f5fbe;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.whatsappLink:hover {
+  text-decoration: underline;
 }
 
 .deliverables {
-  margin-top: 0.65rem;
+  margin-top: 0.7rem;
   display: grid;
-  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.62rem;
 }
 
 .deliverables div {
-  border: 1px solid #e2e9f7;
-  border-radius: 12px;
-  background: #f9fbff;
-  padding: 0.62rem;
-  display: inline-flex;
+  border: 1px solid #dbe7fa;
+  border-radius: 14px;
+  background: #fbfdff;
+  padding: 0.76rem;
+  display: flex;
   gap: 0.5rem;
   align-items: flex-start;
-  color: #1f3b61;
+  color: #1b3c66;
   font-size: 0.9rem;
+  line-height: 1.5;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.deliverables div svg {
+  color: #2a66bf;
+  margin-top: 0.1rem;
+}
+
+.deliverables div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 26px -23px rgba(31, 89, 170, 0.6);
 }
 
 .steps {
-  margin-top: 0.7rem;
-  padding-left: 1.15rem;
-  color: #26476f;
+  margin-top: 0.76rem;
+  padding-left: 1rem;
+  color: #24466f;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-size: 0.92rem;
+  list-style: none;
+}
+
+.nextStepGrid {
+  margin-top: 0.78rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.nextStepCard {
+  border: 1px solid #d8e5fa;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfdff, #ffffff);
+  padding: 0.78rem;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.nextStepCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 28px -24px rgba(31, 89, 170, 0.65);
+}
+
+.nextStepCard span {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid #cfe0f9;
+  background: #f1f7ff;
+  color: #21559f;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.2rem 0.52rem;
+}
+
+.nextStepCard p {
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+  color: #27496f;
+}
+
+.steps li {
+  position: relative;
+  padding-left: 1.4rem;
+}
+
+.steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(140deg, #2a6ccc, #3f84e2);
 }
 
 .finalMeta {
@@ -122,16 +493,28 @@
 
 .finalActions button {
   border-radius: 999px;
-  border: 1px solid #cddcf4;
+  border: 1px solid #c8d9f5;
   background: #ffffff;
-  color: #164179;
+  color: #184581;
   padding: 0.58rem 0.9rem;
   font-weight: 700;
   font-size: 0.85rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.finalActions button:first-child {
+  background: #1f5ebf;
+  border-color: #1f5ebf;
+  color: #fff;
 }
 
 .finalActions button:hover {
-  background: #f2f7ff;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -16px rgba(25, 72, 146, 0.7);
+}
+
+.finalActions button:first-child:hover {
+  background: #1a54ab;
 }
 
 .adjustBox {
@@ -150,9 +533,9 @@
   margin-top: 0.6rem;
   border-radius: 10px;
   border: none;
-  background: #0e60bf;
+  background: #1f5ebf;
   color: #fff;
-  padding: 0.52rem 0.85rem;
+  padding: 0.54rem 0.85rem;
   font-size: 0.84rem;
   font-weight: 700;
 }
@@ -161,6 +544,90 @@
   margin-top: 0.6rem;
   font-size: 0.86rem;
   color: #214873;
+}
+
+.approveModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: rgba(10, 25, 48, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.approveModal {
+  width: min(100%, 30rem);
+  border-radius: 16px;
+  border: 1px solid #d5e4fa;
+  background: #fff;
+  padding: 1rem;
+  box-shadow: 0 24px 44px -26px rgba(8, 31, 72, 0.55);
+}
+
+.approveModal h3 {
+  color: #102e59;
+}
+
+.approveModal p {
+  margin-top: 0.4rem;
+  color: #526987;
+  font-size: 0.9rem;
+}
+
+.modalField {
+  margin-top: 0.72rem;
+  display: grid;
+  gap: 0.35rem;
+  color: #1f3f6b;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.modalField input {
+  border: 1px solid #cbdbf6;
+  border-radius: 11px;
+  padding: 0.58rem 0.66rem;
+  font-size: 0.9rem;
+  color: #19385f;
+  outline: none;
+}
+
+.modalField input:focus {
+  border-color: #2d67bf;
+  box-shadow: 0 0 0 3px rgba(43, 101, 190, 0.18);
+}
+
+.approveModalActions {
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.approveModalActions button {
+  border-radius: 10px;
+  border: 1px solid #c7d8f5;
+  background: #fff;
+  color: #214b81;
+  padding: 0.52rem 0.86rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.approveModalActions button:last-child {
+  background: #1f5ebf;
+  border-color: #1f5ebf;
+  color: #fff;
+}
+
+.modalHint {
+  margin-top: 0.6rem;
+  border: 1px solid #d5e6fb;
+  background: #f6faff;
+  border-radius: 10px;
+  padding: 0.45rem 0.55rem;
 }
 
 .loading,
@@ -177,15 +644,65 @@
 
 @media (max-width: 900px) {
   .heroMetrics,
+  .timeline,
+  .highlightGrid,
+  .gridCards,
+  .nextStepGrid,
+  .extraCostsGrid,
+  .deliverables,
+  .premissasGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .investmentCard {
+    grid-template-columns: 1fr;
+  }
+
+  .heroMetrics,
   .gridCards {
     grid-template-columns: 1fr;
   }
 }
 
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media print {
+  :global(header),
+  :global(footer) {
+    display: none !important;
+  }
+
+  .wrapper {
+    padding-top: 0 !important;
+  }
+
+  .heroActions,
   .finalActions,
   .adjustBox {
     display: none !important;
   }
-}
 
+  .heroCard,
+  .block,
+  .finalCard,
+  .metricCard,
+  .infoCard,
+  .deliverables div,
+  .timelineItem,
+  .highlightCard,
+  .premissasCard {
+    box-shadow: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}

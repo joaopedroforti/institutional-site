@@ -13,6 +13,22 @@ type PageViewResponse = {
   page_visit_id: number;
 };
 
+const PAGE_LABELS: Record<string, string> = {
+  "/": "Home",
+  "/servicos": "Servicos",
+  "/cases": "Cases",
+  "/historia": "Historia",
+  "/onboarding": "Onboarding",
+};
+
+export function getPageLabel(path: string): string {
+  if (path.startsWith("/proposta/")) {
+    return "Proposta";
+  }
+
+  return PAGE_LABELS[path] ?? path;
+}
+
 function canUseBrowserApi() {
   return typeof window !== "undefined";
 }
@@ -113,6 +129,8 @@ export async function trackPageView(currentPath: string) {
       duration_seconds: 0,
       metadata: {
         viewport: `${window.innerWidth}x${window.innerHeight}`,
+        page_name: getPageLabel(currentPath),
+        event_name: "Acesso a pagina",
       },
     }),
   });
@@ -148,7 +166,10 @@ export async function trackInteraction(input: TrackInteractionInput) {
       element: input.element,
       label: input.label,
       page_path: input.pagePath ?? window.location.pathname,
-      metadata: input.metadata,
+      metadata: {
+        page_name: getPageLabel(input.pagePath ?? window.location.pathname),
+        ...(input.metadata ?? {}),
+      },
     }),
   });
 }

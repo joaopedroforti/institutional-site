@@ -167,10 +167,8 @@ class OnboardingController extends Controller
             );
         }
 
-        if ($payload['project_type'] === 'site') {
-            $budgetService->createOrUpdateAutomaticSiteBudget($contact, $metadataPayload, $internalDeadline);
-            $this->moveLeadToBudgetColumn($contact);
-        }
+        $budgetService->createOrUpdateAutomaticBudget($contact, $metadataPayload, $internalDeadline);
+        $this->moveLeadToBudgetColumn($contact);
 
         $leadAnalytics->refreshLeadScore($contact);
 

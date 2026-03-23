@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
-import { getStoredVisitorSessionKey, trackInteraction } from "../lib/analytics";
+import { getPageLabel, getStoredVisitorSessionKey, trackInteraction } from "../lib/analytics";
 import styles from "./contact-lead-form.module.css";
 
 type ContactLeadFormProps = {
@@ -26,6 +26,58 @@ export default function ContactLeadForm({
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [feedback, setFeedback] = useState("");
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
+  const [draftCaptured, setDraftCaptured] = useState(false);
+
+  const pagePath = typeof window !== "undefined" ? window.location.pathname : "/";
+  const pageLabel = useMemo(() => getPageLabel(pagePath), [pagePath]);
+
+  const canCaptureDraft = useMemo(
+    () => Boolean(values.name.trim() && values.email.trim() && values.phone.trim()),
+    [values.email, values.name, values.phone],
+  );
+
+  useEffect(() => {
+    if (!canCaptureDraft || draftCaptured || status === "loading" || status === "success") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          await apiFetch("/contacts", {
+            method: "POST",
+            body: JSON.stringify({
+              ...values,
+              session_key: getStoredVisitorSessionKey(),
+              source_url: window.location.href,
+              referrer: document.referrer || null,
+              metadata: {
+                source,
+                capture_kind: "draft",
+                page_name: pageLabel,
+              },
+            }),
+          });
+
+          await trackInteraction({
+            eventType: "lead_form_abandoned_captured",
+            element: "form",
+            label: source,
+            pagePath,
+            metadata: {
+              event_name: `Formulario ${pageLabel} preenchido sem envio`,
+              where: pageLabel,
+            },
+          });
+          setDraftCaptured(true);
+        } catch {
+          // nao bloqueia experiencia do usuario
+        }
+      })();
+    }, 1300);
+
+    return () => window.clearTimeout(timer);
+  }, [canCaptureDraft, draftCaptured, pageLabel, pagePath, source, status, values]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,15 +100,21 @@ export default function ContactLeadForm({
           referrer: document.referrer || null,
           metadata: {
             source,
+            capture_kind: "submitted",
+            page_name: pageLabel,
           },
         }),
       });
 
       void trackInteraction({
-        eventType: "contact_form_submit",
+        eventType: "lead_form_submitted",
         element: "form",
         label: source,
-        pagePath: window.location.pathname,
+        pagePath,
+        metadata: {
+          event_name: `Enviou formulario ${pageLabel}`,
+          where: pageLabel,
+        },
       });
 
       setValues(initialValues);
@@ -75,10 +133,14 @@ export default function ContactLeadForm({
 
     setHasTrackedOpen(true);
     void trackInteraction({
-      eventType: "contact_form_open",
+      eventType: "lead_form_fill_started",
       element: "form",
       label: source,
-      pagePath: window.location.pathname,
+      pagePath,
+      metadata: {
+        event_name: `Preencheu formulario ${pageLabel}`,
+        where: pageLabel,
+      },
     });
   }
 

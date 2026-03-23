@@ -8,12 +8,14 @@ const TITLES: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
   "/admin/pipes": "Pipes",
   "/admin/negocios": "Pipes",
-  "/admin/orcamentos": "Orcamentos",
+  "/admin/orcamentos": "Propostas",
   "/admin/propostas": "Propostas",
   "/admin/analitico": "Analitico",
-  "/admin/configuracoes": "Vendedores",
+  "/admin/configuracoes": "Configuracoes",
   "/admin/configuracoes/vendedores": "Vendedores",
-  "/admin/configuracoes/geral": "Vendedores",
+  "/admin/configuracoes/propostas": "Propostas",
+  "/admin/configuracoes/gerais": "Configuracoes Gerais",
+  "/admin/configuracoes/precificacao": "Precificacao",
 };
 
 export default function AppHeader() {
@@ -99,7 +101,7 @@ export default function AppHeader() {
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    navigate("/admin/configuracoes");
+                    navigate("/admin/configuracoes/gerais");
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                 >
@@ -110,7 +112,7 @@ export default function AppHeader() {
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    navigate("/admin/configuracoes");
+                    navigate("/admin/configuracoes/vendedores");
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                 >

@@ -149,7 +149,7 @@ export type SellersResponse = {
   data: {
     sellers: SellerRecord[];
     distribution: DistributionSettings;
-    onboarding_deadlines: OnboardingDeadlineSetting[];
+    onboarding_deadlines?: OnboardingDeadlineSetting[];
   };
 };
 
@@ -158,6 +158,8 @@ export type BudgetRecord = {
   identifier: string;
   slug: string;
   status: string;
+  requires_admin_validation?: boolean;
+  is_visible_to_seller?: boolean;
   project_type: string;
   title: string;
   valid_until: string | null;
@@ -165,6 +167,10 @@ export type BudgetRecord = {
   internal_deadline_days: number | null;
   total_amount: string | number;
   entry_amount: string | number;
+  discount_percent?: string | number;
+  discount_amount?: string | number;
+  admin_validated_at?: string | null;
+  admin_validated_by?: number | null;
   adjustment_message: string | null;
   contact_request_id: number;
   client_name: string;
@@ -189,5 +195,54 @@ export type BudgetsResponse = {
   data: {
     budgets: BudgetRecord[];
     notifications: AdminNotificationRecord[];
+    pricing_settings?: Record<
+      string,
+      {
+        max_discount_percent: number;
+        requires_admin_validation: boolean;
+      }
+    >;
   };
+};
+
+export type ProposalSettingsResponse = {
+  data: {
+    onboarding_deadlines: OnboardingDeadlineSetting[];
+  };
+};
+
+export type PricingProjectSetting = {
+  id?: number;
+  project_type: "site" | "sistema" | "automacao" | string;
+  max_discount_percent: number;
+  requires_admin_validation: boolean;
+};
+
+export type PricingRuleItem = {
+  id?: number;
+  project_type: "site" | "sistema" | "automacao" | string;
+  rule_key: string;
+  label: string;
+  amount: number;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type PricingSettingsResponse = {
+  data: {
+    project_settings: PricingProjectSetting[];
+    rules: Record<string, PricingRuleItem[]>;
+  };
+};
+
+export type GeneralSettings = {
+  company_name: string;
+  contact_email: string;
+  contact_phone: string;
+  contact_whatsapp: string;
+  contact_whatsapp_url: string;
+};
+
+export type GeneralSettingsResponse = {
+  data: GeneralSettings;
 };

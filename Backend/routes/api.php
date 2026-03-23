@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactRequestController;
+use App\Http\Controllers\Api\CommercialSettingsController;
 use App\Http\Controllers\Api\KanbanController;
 use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\BudgetController;
@@ -26,6 +27,7 @@ Route::post('/onboarding/submit', [OnboardingController::class, 'submit']);
 Route::get('/proposals/{slug}', [PublicProposalController::class, 'show']);
 Route::post('/proposals/{slug}/approve', [PublicProposalController::class, 'approve']);
 Route::post('/proposals/{slug}/request-adjustment', [PublicProposalController::class, 'requestAdjustment']);
+Route::get('/settings/general', [CommercialSettingsController::class, 'publicGeneralSettings']);
 
 Route::prefix('analytics')->group(function (): void {
     Route::post('/session', [AnalyticsController::class, 'syncSession']);
@@ -48,7 +50,15 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::patch('/sellers/onboarding/deadlines', [SellerController::class, 'updateOnboardingDeadlines']);
     Route::patch('/sellers/{user}', [SellerController::class, 'update']);
     Route::get('/budgets', [BudgetController::class, 'index']);
+    Route::patch('/budgets/{budget}/validate', [BudgetController::class, 'validateBudget']);
+    Route::patch('/budgets/{budget}/discount', [BudgetController::class, 'applyDiscount']);
     Route::patch('/notifications/{adminNotification}/read', [BudgetController::class, 'markNotificationAsRead']);
+    Route::get('/settings/proposals', [CommercialSettingsController::class, 'proposalSettings']);
+    Route::patch('/settings/proposals/deadlines', [CommercialSettingsController::class, 'updateProposalDeadlines']);
+    Route::get('/settings/general', [CommercialSettingsController::class, 'generalSettings']);
+    Route::patch('/settings/general', [CommercialSettingsController::class, 'updateGeneralSettings']);
+    Route::get('/settings/pricing', [CommercialSettingsController::class, 'pricingSettings']);
+    Route::patch('/settings/pricing', [CommercialSettingsController::class, 'updatePricingSettings']);
     Route::get('/pipes', [KanbanController::class, 'pipes']);
     Route::get('/kanban', [KanbanController::class, 'board']);
     Route::post('/kanban/leads', [KanbanController::class, 'storeLead']);

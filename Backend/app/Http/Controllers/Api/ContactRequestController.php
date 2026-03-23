@@ -47,6 +47,7 @@ class ContactRequestController extends Controller
         }
 
         $session = null;
+        $captureKind = (string) data_get($payload, 'metadata.capture_kind', 'submitted');
 
         if (! empty($payload['session_key'])) {
             $session = VisitorSession::query()
@@ -62,6 +63,79 @@ class ContactRequestController extends Controller
                 'identified_company' => $payload['company'] ?? $session->identified_company,
                 'last_seen_at' => now(),
             ])->save();
+        }
+
+        $existingLead = $this->findExistingLeadForCapture(
+            $payload['email'] ?? null,
+            $payload['phone'] ?? null,
+            $session?->id,
+        );
+
+        if ($existingLead && $captureKind === 'draft') {
+            $mergedMetadata = array_filter([
+                ...(is_array($existingLead->metadata) ? $existingLead->metadata : []),
+                ...($payload['metadata'] ?? []),
+            ], fn ($value) => $value !== null && $value !== '');
+
+            $existingLead->update([
+                'name' => $existingLead->name ?: $payload['name'],
+                'email' => $existingLead->email ?: ($payload['email'] ?? null),
+                'phone' => $existingLead->phone ?: ($payload['phone'] ?? null),
+                'company' => $existingLead->company ?: ($payload['company'] ?? null),
+                'source_url' => $payload['source_url'] ?? $existingLead->source_url,
+                'referrer' => $payload['referrer'] ?? $existingLead->referrer,
+                'metadata' => $mergedMetadata,
+            ]);
+
+            $leadAnalytics->refreshLeadScore($existingLead);
+            $existingLead->forceFill([
+                'lead_score' => min((int) ($existingLead->lead_score ?? 10), 12),
+                'score_band' => 'cold',
+            ])->save();
+
+            return response()->json([
+                'message' => 'Lead de rascunho atualizado.',
+                'contact_id' => $existingLead->id,
+            ]);
+        }
+
+        if ($existingLead && $captureKind === 'submitted') {
+            $mergedMetadata = array_filter([
+                ...(is_array($existingLead->metadata) ? $existingLead->metadata : []),
+                ...($payload['metadata'] ?? []),
+            ], fn ($value) => $value !== null && $value !== '');
+
+            $existingLead->update([
+                'visitor_session_id' => $existingLead->visitor_session_id ?: $session?->id,
+                'name' => $payload['name'],
+                'phone' => $payload['phone'] ?? null,
+                'email' => $payload['email'] ?? null,
+                'company' => $payload['company'] ?? null,
+                'message' => $payload['message'] ?? $existingLead->message,
+                'source_url' => $payload['source_url'] ?? $existingLead->source_url,
+                'referrer' => $payload['referrer'] ?? $existingLead->referrer,
+                'metadata' => $mergedMetadata,
+            ]);
+
+            if (Schema::hasTable('lead_histories')) {
+                LeadHistory::query()->create([
+                    'contact_request_id' => $existingLead->id,
+                    'event_type' => 'lead_form_submitted',
+                    'event_label' => 'Lead finalizado via formulario',
+                    'payload' => [
+                        'source_url' => $existingLead->source_url,
+                        'session_key' => $session?->session_key,
+                    ],
+                    'occurred_at' => now(),
+                ]);
+            }
+
+            $leadAnalytics->refreshLeadScore($existingLead);
+
+            return response()->json([
+                'message' => 'Solicitacao atualizada com sucesso.',
+                'contact_id' => $existingLead->id,
+            ], 201);
         }
 
         $defaultColumn = LeadKanbanColumn::defaultColumn();
@@ -102,6 +176,13 @@ class ContactRequestController extends Controller
 
         $leadDistribution->assignLead($contact);
         $leadAnalytics->refreshLeadScore($contact);
+
+        if ($captureKind === 'draft') {
+            $contact->forceFill([
+                'lead_score' => min((int) ($contact->lead_score ?? 10), 12),
+                'score_band' => 'cold',
+            ])->save();
+        }
 
         return response()->json([
             'message' => 'Solicitacao enviada com sucesso.',
@@ -259,5 +340,35 @@ class ContactRequestController extends Controller
         return response()->json([
             'message' => 'Anotacao registrada com sucesso.',
         ], 201);
+    }
+
+    private function findExistingLeadForCapture(?string $email, ?string $phone, ?int $sessionId): ?ContactRequest
+    {
+        $hasFilter = false;
+
+        $query = ContactRequest::query()
+            ->where(function ($builder) use ($email, $phone, $sessionId, &$hasFilter): void {
+                if ($sessionId) {
+                    $builder->orWhere('visitor_session_id', $sessionId);
+                    $hasFilter = true;
+                }
+
+                if (! empty($email)) {
+                    $builder->orWhere('email', $email);
+                    $hasFilter = true;
+                }
+
+                if (! empty($phone)) {
+                    $builder->orWhere('phone', $phone);
+                    $hasFilter = true;
+                }
+            })
+            ->orderByDesc('id');
+
+        if (! $hasFilter) {
+            return null;
+        }
+
+        return $query->first();
     }
 }

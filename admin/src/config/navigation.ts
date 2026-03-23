@@ -3,9 +3,12 @@ import {
   BarChart3,
   GitBranch,
   ClipboardList,
-  FileText,
   Gauge,
   Users,
+  UserCog,
+  SlidersHorizontal,
+  Settings2,
+  Settings,
 } from "lucide-react";
 
 export type SidebarItem = {
@@ -33,14 +36,9 @@ export const SIDEBAR_ITEMS: SidebarGroup[] = [
     icon: GitBranch,
   },
   {
-    label: "Orcamentos",
+    label: "Propostas",
     path: "/admin/orcamentos",
     icon: ClipboardList,
-  },
-  {
-    label: "Propostas",
-    path: "/admin/propostas",
-    icon: FileText,
   },
   {
     label: "Analitico",
@@ -49,7 +47,28 @@ export const SIDEBAR_ITEMS: SidebarGroup[] = [
   },
   {
     label: "Configuracoes",
-    path: "/admin/configuracoes",
     icon: Users,
+    children: [
+      {
+        label: "Vendedores",
+        path: "/admin/configuracoes/vendedores",
+        icon: UserCog,
+      },
+      {
+        label: "Propostas",
+        path: "/admin/configuracoes/propostas",
+        icon: Settings2,
+      },
+      {
+        label: "Configuracoes Gerais",
+        path: "/admin/configuracoes/gerais",
+        icon: Settings,
+      },
+      {
+        label: "Precificacao",
+        path: "/admin/configuracoes/precificacao",
+        icon: SlidersHorizontal,
+      },
+    ],
   },
 ];

@@ -213,9 +213,15 @@ class LeadAnalyticsService
             $score += 10;
         }
 
-        $score += min($events->where('event_type', 'contact_form_submit')->count() * 10, 20);
-        $score += min($events->where('event_type', 'whatsapp_click')->count() * 8, 16);
-        $score += min($events->where('event_type', 'cta_click')->count() * 4, 12);
+        $formSubmitEvents = $events->whereIn('event_type', ['lead_form_submitted', 'contact_form_submit']);
+        $whatsappClickEvents = $events->whereIn('event_type', ['whatsapp_button_click', 'whatsapp_click']);
+        $ctaEvents = $events->whereIn('event_type', ['cta_request_proposal_click', 'cta_click']);
+        $whatsappFormEvents = $events->where('event_type', 'whatsapp_form_submitted');
+
+        $score += min($formSubmitEvents->count() * 10, 20);
+        $score += min($whatsappClickEvents->count() * 8, 16);
+        $score += min($ctaEvents->count() * 4, 12);
+        $score += min($whatsappFormEvents->count() * 10, 20);
         $score += $this->resolveOnboardingDeadlineBonus($lead);
 
         if ($metrics['total_page_views'] <= 1 && $events->count() === 0) {

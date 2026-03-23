@@ -67,9 +67,15 @@ const PIPE_LABELS: Record<string, string> = {
 
 const CONTACT_TAG_LABELS: Record<string, string> = {
   whatsapp_click: "Botao WhatsApp",
+  whatsapp_button_click: "Botao WhatsApp",
+  whatsapp_form_submitted: "Formulario WhatsApp",
   contact_form_submit: "Formulario de contato",
+  lead_form_submitted: "Formulario enviado",
+  lead_form_fill_started: "Formulario iniciado",
+  lead_form_abandoned_captured: "Lead parcial capturado",
   onboarding_form_submit: "Formulario onboarding",
   cta_click: "Botao CTA",
+  cta_request_proposal_click: "Solicitar proposta",
   proposal_open: "Acesso proposta",
   proposal_reopen: "Reabriu proposta",
   proposal_view: "Visualizou proposta",
@@ -254,27 +260,9 @@ function detectContactTags(lead: KanbanLead, details?: Record<string, unknown> |
   return Array.from(tags).slice(0, 4);
 }
 
-function buildOnboardingUrl(baseUrl: string, lead: KanbanLead): string {
+function buildOnboardingUrl(baseUrl: string): string {
   const normalized = baseUrl.replace(/\/$/, "");
   const url = new URL("/onboarding", normalized);
-
-  url.searchParams.set("lead_id", String(lead.id));
-
-  if (lead.email) {
-    url.searchParams.set("email", lead.email);
-  }
-
-  if (lead.phone) {
-    url.searchParams.set("phone", lead.phone);
-  }
-
-  if (lead.name) {
-    url.searchParams.set("name", lead.name);
-  }
-
-  if (lead.company) {
-    url.searchParams.set("company", lead.company);
-  }
 
   return url.toString();
 }
@@ -371,6 +359,7 @@ export default function PipesPage() {
   const [selectedLead, setSelectedLead] = useState<KanbanLead | null>(null);
   const [leadDetails, setLeadDetails] = useState<Record<string, unknown> | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [copiedProposalUrl, setCopiedProposalUrl] = useState(false);
 
   const [activeTab, setActiveTab] = useState<LeadModalTab>("movimentacao");
   const [editingField, setEditingField] = useState<EditableLeadField>(null);
@@ -556,7 +545,7 @@ export default function PipesPage() {
       if (pipeline === "comercial" && targetColumn.slug === "onboarding") {
         setCopiedOnboardingUrl(false);
         setOnboardingPrompt({
-          url: buildOnboardingUrl(mainSiteBaseUrl, lead),
+          url: buildOnboardingUrl(mainSiteBaseUrl),
           leadName: lead.name,
         });
       }
@@ -610,6 +599,7 @@ export default function PipesPage() {
     setSelectedLead(lead);
     setLeadDetails(null);
     setDetailsLoading(true);
+    setCopiedProposalUrl(false);
     setActiveTab("movimentacao");
     setEditingField(null);
 
@@ -879,6 +869,12 @@ export default function PipesPage() {
   }, [leadDetails]);
 
   const trackingSummary = (leadDetails?.tracking_summary as Record<string, unknown> | undefined) ?? {};
+  const proposalSlug = useMemo(() => {
+    const metadata = (leadDetails?.metadata as Record<string, unknown> | undefined) ?? {};
+    const value = metadata.proposal_slug;
+    return value ? String(value) : "";
+  }, [leadDetails]);
+  const proposalUrl = proposalSlug ? `${mainSiteBaseUrl.replace(/\/$/, "")}/proposta/${proposalSlug}` : "";
   const onboardingMeta = useMemo(() => {
     const metadata = (leadDetails?.metadata as Record<string, unknown> | undefined) ?? {};
     return (metadata.onboarding as Record<string, unknown> | undefined) ?? null;
@@ -1657,6 +1653,36 @@ export default function PipesPage() {
                         <p className="text-sm font-semibold text-slate-900">Orcamento atual</p>
                         <p className="text-sm text-slate-600">Valor: {formatMoney(leadDetails?.deal_value ?? selectedLead.deal_value)}</p>
                         <p className="text-xs text-slate-500">Acessos em proposta: {String(trackingSummary.proposal_accesses ?? 0)}</p>
+                        {proposalUrl ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <a
+                              href={proposalUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-xs font-medium text-white hover:bg-blue-600"
+                            >
+                              <ExternalLink size={14} />
+                              Abrir proposta
+                            </a>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(proposalUrl);
+                                  setCopiedProposalUrl(true);
+                                } catch {
+                                  setCopiedProposalUrl(false);
+                                }
+                              }}
+                              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                            >
+                              <Copy size={14} />
+                              {copiedProposalUrl ? "Link copiado" : "Copiar link"}
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-xs text-slate-500">Proposta ainda nao gerada para este lead.</p>
+                        )}
                       </div>
                       <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                         <p className="text-sm font-semibold text-slate-900">Historico de orcamentos</p>

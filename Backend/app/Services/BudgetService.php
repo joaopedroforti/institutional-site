@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Budget;
 use App\Models\BudgetVersion;
 use App\Models\ContactRequest;
+use App\Models\PricingProjectSetting;
+use App\Models\PricingRuleItem;
 use App\Models\ProposalTemplate;
 use Illuminate\Support\Str;
 
@@ -14,54 +16,42 @@ class BudgetService
      * @param  array<string, mixed>  $onboarding
      * @param  array<string, mixed>|null  $onboardingInternal
      */
-    public function createOrUpdateAutomaticSiteBudget(
+    public function createOrUpdateAutomaticBudget(
         ContactRequest $contact,
         array $onboarding,
         ?array $onboardingInternal = null,
     ): Budget {
+        $projectType = (string) ($onboarding['project_type'] ?? 'site');
         $answers = is_array($onboarding['answers'] ?? null) ? $onboarding['answers'] : [];
-        $objectiveValues = $this->extractObjectiveValues($answers['siteObjective'] ?? null);
-        $selectedPages = $this->extractStringList($answers['sitePages'] ?? null);
-        $siteDeadline = isset($answers['siteDeadline']) ? (string) $answers['siteDeadline'] : null;
-        $visualDirection = isset($answers['siteVisual']) ? (string) $answers['siteVisual'] : null;
 
-        $objectiveBaseMap = [
-            'apresentar' => 350,
-            'leads' => 350,
-            'portfolio' => 350,
-            'vender' => 2500,
-            'agendamento' => 600,
-        ];
-        $pageAddonsMap = [
-            'home' => 0,
-            'sobre' => 100,
-            'servicos' => 100,
-            'portfolio-ou-cases' => 0,
-            'depoimentos' => 100,
-            'blog-ou-conteudo' => 300,
-            'faq' => 50,
-            'contato' => 100,
-        ];
-        $timelineAdjustMap = [
-            'urgente' => 200,
-            'mes' => 0,
-            '30-60' => -50,
-            'sem-pressa' => -100,
-        ];
+        $pricingSetting = PricingProjectSetting::query()
+            ->where('project_type', $projectType)
+            ->first();
 
-        $baseAmount = 0.0;
-        foreach ($objectiveValues as $objective) {
-            $baseAmount += (float) ($objectiveBaseMap[$objective] ?? 0);
+        $ruleMap = PricingRuleItem::query()
+            ->where('project_type', $projectType)
+            ->where('is_active', true)
+            ->get()
+            ->mapWithKeys(fn (PricingRuleItem $item) => [$item->rule_key => (float) $item->amount])
+            ->all();
+
+        $pricing = match ($projectType) {
+            'sistema' => $this->buildSystemPricing($answers, $ruleMap),
+            'automacao' => $this->buildAutomationPricing($answers, $ruleMap),
+            default => $this->buildSitePricing($answers, $ruleMap),
+        };
+
+        $needsValidation = (bool) ($pricingSetting?->requires_admin_validation ?? ($projectType !== 'site'));
+        if ($projectType === 'sistema') {
+            $aiNeed = (string) ($answers['systemAiNeed'] ?? '');
+            $integrationNeed = (string) ($answers['systemIntegrationNeed'] ?? '');
+            if ($aiNeed === 'sim' || $integrationNeed === 'sim') {
+                $needsValidation = true;
+            }
         }
 
-        $addonsAmount = 0.0;
-        foreach ($selectedPages as $page) {
-            $addonsAmount += (float) ($pageAddonsMap[Str::slug($page)] ?? 0);
-        }
-
-        $timelineAdjust = (float) ($timelineAdjustMap[$siteDeadline ?? ''] ?? 0);
-        $totalAmount = max(0, $baseAmount + $addonsAmount + $timelineAdjust);
-        $entryAmount = round($totalAmount * 0.5, 2);
+        $isVisibleToSeller = ! $needsValidation;
+        $status = $needsValidation ? 'pending_validation' : 'sent';
 
         $template = ProposalTemplate::query()
             ->where('template_key', 'modelo-site-v1')
@@ -72,45 +62,51 @@ class BudgetService
         $slugBase = Str::slug($companyOrName.'-'.$dateSuffix);
         $existingBudget = Budget::query()
             ->where('contact_request_id', $contact->id)
-            ->where('project_type', 'site')
+            ->where('project_type', $projectType)
             ->first();
+
         $slug = $existingBudget?->slug ?? $this->resolveUniqueSlug($slugBase ?: 'proposta-'.$dateSuffix, $contact->id);
         $identifier = $existingBudget?->identifier ?? $this->resolveIdentifier();
 
         $internalDays = isset($onboardingInternal['internal_days']) ? (int) $onboardingInternal['internal_days'] : null;
         $internalDueDate = isset($onboardingInternal['expected_due_date']) ? (string) $onboardingInternal['expected_due_date'] : null;
-        $deadlineKey = isset($onboardingInternal['selection_key']) ? (string) $onboardingInternal['selection_key'] : $siteDeadline;
+        $deadlineKey = isset($onboardingInternal['selection_key']) ? (string) $onboardingInternal['selection_key'] : null;
 
         $budgetData = [
-                'responsible_user_id' => $contact->assigned_user_id,
-                'proposal_template_id' => $template?->id,
-                'identifier' => $identifier,
-                'slug' => $slug,
-                'status' => 'sent',
-                'title' => 'Proposta comercial '.($contact->company ?: $contact->name),
-                'valid_until' => now()->addDays(15)->toDateString(),
-                'internal_due_date' => $internalDueDate,
-                'internal_deadline_days' => $internalDays,
-                'internal_deadline_key' => $deadlineKey,
-                'client_name' => $contact->name,
-                'client_company' => $contact->company,
-                'client_email' => $contact->email,
-                'client_phone' => $contact->phone,
-                'objective' => implode(', ', $objectiveValues),
-                'visual_direction' => $visualDirection,
-                'onboarding_answers' => $answers,
-                'selected_pages' => $selectedPages,
-                'base_amount' => $baseAmount,
-                'addons_amount' => $addonsAmount,
-                'timeline_adjustment' => $timelineAdjust,
-                'total_amount' => $totalAmount,
-                'entry_amount' => $entryAmount,
-                'published_at' => now(),
-                'metadata' => [
-                    'auto_generated' => true,
-                    'source' => 'onboarding_submit',
-                ],
-            ];
+            'responsible_user_id' => $contact->assigned_user_id,
+            'proposal_template_id' => $template?->id,
+            'identifier' => $identifier,
+            'slug' => $slug,
+            'status' => $status,
+            'requires_admin_validation' => $needsValidation,
+            'is_visible_to_seller' => $isVisibleToSeller,
+            'title' => 'Proposta comercial '.($contact->company ?: $contact->name),
+            'valid_until' => now()->addDays(15)->toDateString(),
+            'internal_due_date' => $internalDueDate,
+            'internal_deadline_days' => $internalDays,
+            'internal_deadline_key' => $deadlineKey,
+            'client_name' => $contact->name,
+            'client_company' => $contact->company,
+            'client_email' => $contact->email,
+            'client_phone' => $contact->phone,
+            'objective' => $pricing['objective'],
+            'visual_direction' => $pricing['visual_direction'],
+            'onboarding_answers' => $answers,
+            'selected_pages' => $pricing['selected_pages'],
+            'base_amount' => $pricing['base_amount'],
+            'addons_amount' => $pricing['addons_amount'],
+            'timeline_adjustment' => $pricing['timeline_adjustment'],
+            'total_amount' => $pricing['total_amount'],
+            'entry_amount' => $pricing['entry_amount'],
+            'discount_percent' => 0,
+            'discount_amount' => 0,
+            'published_at' => $isVisibleToSeller ? now() : null,
+            'metadata' => [
+                'auto_generated' => true,
+                'source' => 'onboarding_submit',
+                ...($needsValidation ? ['validation' => 'pending_admin'] : []),
+            ],
+        ];
 
         if ($existingBudget) {
             $existingBudget->update($budgetData);
@@ -118,23 +114,173 @@ class BudgetService
         } else {
             $budget = Budget::query()->create([
                 'contact_request_id' => $contact->id,
-                'project_type' => 'site',
+                'project_type' => $projectType,
                 ...$budgetData,
             ]);
         }
 
-        $metadata = is_array($contact->metadata) ? $contact->metadata : [];
-        $metadata['proposal_status'] = 'sent';
-        $metadata['proposal_slug'] = $budget->slug;
+        $contactMetadata = is_array($contact->metadata) ? $contact->metadata : [];
+        $contactMetadata['proposal_status'] = $status;
+
+        if ($isVisibleToSeller) {
+            $contactMetadata['proposal_slug'] = $budget->slug;
+        } else {
+            unset($contactMetadata['proposal_slug']);
+        }
 
         $contact->forceFill([
-            'deal_value' => $totalAmount,
-            'metadata' => $metadata,
+            'deal_value' => $pricing['total_amount'],
+            'metadata' => $contactMetadata,
         ])->save();
 
         $this->storeVersionSnapshot($budget, null);
 
         return $budget;
+    }
+
+    /**
+     * @param  array<string, mixed>  $answers
+     * @param  array<string, float>  $ruleMap
+     * @return array<string, mixed>
+     */
+    private function buildSitePricing(array $answers, array $ruleMap): array
+    {
+        $objectiveValues = $this->extractObjectiveValues($answers['siteObjective'] ?? null);
+        $selectedPages = $this->extractStringList($answers['sitePages'] ?? null);
+        $siteDeadline = isset($answers['siteDeadline']) ? (string) $answers['siteDeadline'] : null;
+        $visualDirection = isset($answers['siteVisual']) ? (string) $answers['siteVisual'] : null;
+
+        $objectiveRuleMap = [
+            'apresentar' => 'objective_apresentar',
+            'leads' => 'objective_leads',
+            'portfolio' => 'objective_portfolio',
+            'vender' => 'objective_vender',
+            'agendamento' => 'objective_agendamento',
+        ];
+
+        $pageRuleMap = [
+            'home' => 'page_home',
+            'servicos' => 'page_servicos',
+            'sobre' => 'page_sobre',
+            'depoimentos' => 'page_depoimentos',
+            'blog-ou-conteudo' => 'page_blog',
+            'faq' => 'page_faq',
+            'contato' => 'page_contato',
+        ];
+
+        $deadlineRuleMap = [
+            'urgente' => 'deadline_urgente',
+            'mes' => 'deadline_mes',
+            '30-60' => 'deadline_30_60',
+            'sem-pressa' => 'deadline_sem_pressa',
+        ];
+
+        $baseAmount = 0.0;
+        foreach ($objectiveValues as $objective) {
+            $baseAmount += (float) ($ruleMap[$objectiveRuleMap[$objective] ?? ''] ?? 0);
+        }
+
+        $addonsAmount = 0.0;
+        foreach ($selectedPages as $page) {
+            $addonsAmount += (float) ($ruleMap[$pageRuleMap[Str::slug($page)] ?? ''] ?? 0);
+        }
+
+        $timelineAdjust = (float) ($ruleMap[$deadlineRuleMap[$siteDeadline ?? ''] ?? ''] ?? 0);
+        $totalAmount = max(0, round($baseAmount + $addonsAmount + $timelineAdjust, 2));
+
+        return [
+            'objective' => implode(', ', $objectiveValues),
+            'visual_direction' => $visualDirection,
+            'selected_pages' => $selectedPages,
+            'base_amount' => $baseAmount,
+            'addons_amount' => $addonsAmount,
+            'timeline_adjustment' => $timelineAdjust,
+            'total_amount' => $totalAmount,
+            'entry_amount' => round($totalAmount * 0.5, 2),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $answers
+     * @param  array<string, float>  $ruleMap
+     * @return array<string, mixed>
+     */
+    private function buildSystemPricing(array $answers, array $ruleMap): array
+    {
+        $systemType = (string) ($answers['systemType'] ?? '');
+        $integrationNeed = (string) ($answers['systemIntegrationNeed'] ?? '');
+        $assets = $this->extractStringList($answers['systemAssets'] ?? null);
+
+        $typeRule = $systemType === 'local' ? 'type_local' : 'type_web';
+
+        $baseAmount = (float) ($ruleMap['base'] ?? 0);
+        $addonsAmount = (float) ($ruleMap[$typeRule] ?? 0);
+
+        if ($integrationNeed === 'sim') {
+            $addonsAmount += (float) ($ruleMap['integration_yes'] ?? 0);
+        }
+
+        $assetSlugMap = [
+            'conteudo-das-paginas' => 'asset_conteudo',
+            'logo' => 'asset_logo',
+            'identidade-visual' => 'asset_identidade',
+            'sistemas-de-referencia' => 'asset_referencia',
+            'ainda-nao-tenho-nada' => 'asset_nada',
+        ];
+
+        if (count($assets) === 0) {
+            $addonsAmount += (float) ($ruleMap['asset_nada'] ?? 0);
+        }
+
+        foreach ($assets as $asset) {
+            $addonsAmount += (float) ($ruleMap[$assetSlugMap[Str::slug($asset)] ?? ''] ?? 0);
+        }
+
+        $totalAmount = max(0, round($baseAmount + $addonsAmount, 2));
+
+        return [
+            'objective' => trim((string) ($answers['systemFeatures'] ?? 'Sistema sob medida')),
+            'visual_direction' => null,
+            'selected_pages' => [],
+            'base_amount' => $baseAmount,
+            'addons_amount' => $addonsAmount,
+            'timeline_adjustment' => 0,
+            'total_amount' => $totalAmount,
+            'entry_amount' => round($totalAmount * 0.5, 2),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $answers
+     * @param  array<string, float>  $ruleMap
+     * @return array<string, mixed>
+     */
+    private function buildAutomationPricing(array $answers, array $ruleMap): array
+    {
+        $automationType = (string) ($answers['automationType'] ?? '');
+
+        $typeRuleMap = [
+            'sistema-sistema' => 'type_sistema_sistema',
+            'whatsapp' => 'type_whatsapp',
+            'webhooks' => 'type_webhooks',
+            'outro' => 'type_outro',
+        ];
+
+        $baseAmount = (float) ($ruleMap['base'] ?? 0);
+        $addonsAmount = (float) ($ruleMap[$typeRuleMap[$automationType] ?? ''] ?? 0);
+
+        $totalAmount = max(0, round($baseAmount + $addonsAmount, 2));
+
+        return [
+            'objective' => trim((string) ($answers['automationDescription'] ?? 'Automacao de processo')),
+            'visual_direction' => null,
+            'selected_pages' => [],
+            'base_amount' => $baseAmount,
+            'addons_amount' => $addonsAmount,
+            'timeline_adjustment' => 0,
+            'total_amount' => $totalAmount,
+            'entry_amount' => round($totalAmount * 0.5, 2),
+        ];
     }
 
     private function resolveIdentifier(): string
@@ -204,7 +350,7 @@ class BudgetService
             ->all();
     }
 
-    private function storeVersionSnapshot(Budget $budget, ?int $actorId): void
+    public function storeVersionSnapshot(Budget $budget, ?int $actorId): void
     {
         $nextVersion = ((int) $budget->versions()->max('version_number')) + 1;
 

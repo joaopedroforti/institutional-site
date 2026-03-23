@@ -15,6 +15,8 @@ class Budget extends Model
         'identifier',
         'slug',
         'status',
+        'requires_admin_validation',
+        'is_visible_to_seller',
         'project_type',
         'title',
         'valid_until',
@@ -34,8 +36,15 @@ class Budget extends Model
         'timeline_adjustment',
         'total_amount',
         'entry_amount',
+        'discount_percent',
+        'discount_amount',
         'published_at',
         'approved_at',
+        'approved_person_name',
+        'approved_person_cpf',
+        'approved_person_birth_date',
+        'admin_validated_at',
+        'admin_validated_by',
         'adjustment_requested_at',
         'adjustment_message',
         'metadata',
@@ -46,8 +55,12 @@ class Budget extends Model
         return [
             'valid_until' => 'date',
             'internal_due_date' => 'date',
+            'requires_admin_validation' => 'boolean',
+            'is_visible_to_seller' => 'boolean',
             'published_at' => 'datetime',
             'approved_at' => 'datetime',
+            'approved_person_birth_date' => 'date',
+            'admin_validated_at' => 'datetime',
             'adjustment_requested_at' => 'datetime',
             'onboarding_answers' => 'array',
             'selected_pages' => 'array',
@@ -57,6 +70,8 @@ class Budget extends Model
             'timeline_adjustment' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'entry_amount' => 'decimal:2',
+            'discount_percent' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
         ];
     }
 
@@ -75,6 +90,11 @@ class Budget extends Model
         return $this->belongsTo(ProposalTemplate::class, 'proposal_template_id');
     }
 
+    public function adminValidator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_validated_by');
+    }
+
     public function versions(): HasMany
     {
         return $this->hasMany(BudgetVersion::class)->orderByDesc('version_number');
@@ -85,4 +105,3 @@ class Budget extends Model
         return $this->hasMany(ProposalView::class);
     }
 }
-

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useEffectEvent } from "react";
-import { trackInteraction, trackPageView } from "../lib/analytics";
+import { getPageLabel, trackInteraction, trackPageView } from "../lib/analytics";
 
 function extractInteractionLabel(target: HTMLElement) {
   const trackedLabel =
@@ -32,9 +32,9 @@ export default function AnalyticsProvider() {
     const explicitType = target.getAttribute("data-track-type");
     const eventType =
       explicitEventType ||
-      (explicitType === "cta" ? "cta_click" : null) ||
-      (explicitType === "whatsapp" ? "whatsapp_click" : null) ||
-      (href.includes("wa.me") ? "whatsapp_click" : null) ||
+      (explicitType === "cta" ? "cta_request_proposal_click" : null) ||
+      (explicitType === "whatsapp" ? "whatsapp_button_click" : null) ||
+      (href.includes("wa.me") ? "whatsapp_button_click" : null) ||
       (href.includes("/proposta/") ? "proposal_open" : null) ||
       "click";
 
@@ -45,6 +45,15 @@ export default function AnalyticsProvider() {
       pagePath: pathname,
       metadata: {
         href,
+        event_name:
+          eventType === "cta_request_proposal_click"
+            ? "Clique botao solicitar proposta"
+            : eventType === "whatsapp_button_click"
+              ? "Clique botao WhatsApp"
+              : eventType === "proposal_open"
+                ? "Acesso proposta"
+                : "Interacao",
+        where: getPageLabel(pathname),
       },
     });
   });

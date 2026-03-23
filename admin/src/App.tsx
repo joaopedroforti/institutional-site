@@ -10,6 +10,8 @@ import OrcamentosPage from "./pages/admin/OrcamentosPage";
 import PropostasPage from "./pages/admin/PropostasPage";
 import AnaliticoPage from "./pages/admin/AnaliticoPage";
 import VendedoresPage from "./pages/admin/VendedoresPage";
+import PrecificacaoPage from "./pages/admin/PrecificacaoPage";
+import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 
 function NotFoundPage() {
   return (
@@ -40,11 +42,13 @@ export default function App() {
             <Route path="/admin/pipes" element={<PipesPage />} />
             <Route path="/admin/negocios" element={<Navigate to="/admin/pipes" replace />} />
             <Route path="/admin/orcamentos" element={<OrcamentosPage />} />
-            <Route path="/admin/propostas" element={<PropostasPage />} />
+            <Route path="/admin/propostas" element={<Navigate to="/admin/configuracoes/propostas" replace />} />
             <Route path="/admin/analitico" element={<AnaliticoPage />} />
-            <Route path="/admin/configuracoes" element={<VendedoresPage />} />
-            <Route path="/admin/configuracoes/vendedores" element={<Navigate to="/admin/configuracoes" replace />} />
-            <Route path="/admin/configuracoes/geral" element={<Navigate to="/admin/configuracoes" replace />} />
+            <Route path="/admin/configuracoes" element={<Navigate to="/admin/configuracoes/vendedores" replace />} />
+            <Route path="/admin/configuracoes/vendedores" element={<VendedoresPage />} />
+            <Route path="/admin/configuracoes/propostas" element={<PropostasPage />} />
+            <Route path="/admin/configuracoes/gerais" element={<ConfiguracoesPage />} />
+            <Route path="/admin/configuracoes/precificacao" element={<PrecificacaoPage />} />
           </Route>
         </Route>
 

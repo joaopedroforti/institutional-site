@@ -42,12 +42,28 @@ class PublicProposalController extends Controller
         ])->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
-    public function approve(string $slug): JsonResponse
+    public function approve(Request $request, string $slug): JsonResponse
     {
+        $payload = $request->validate([
+            'person_name' => ['required', 'string', 'min:3', 'max:255'],
+            'person_cpf' => ['required', 'string', 'max:20'],
+            'person_birth_date' => ['required', 'date', 'before:today'],
+        ]);
+
+        $cpfDigits = preg_replace('/\D+/', '', $payload['person_cpf'] ?? '');
+        if (strlen($cpfDigits) !== 11) {
+            return response()->json([
+                'message' => 'CPF invalido. Informe um CPF com 11 digitos.',
+            ], 422);
+        }
+
         $budget = Budget::query()->with('contact')->where('slug', $slug)->firstOrFail();
         $budget->forceFill([
             'status' => 'approved',
             'approved_at' => now(),
+            'approved_person_name' => trim($payload['person_name']),
+            'approved_person_cpf' => $cpfDigits,
+            'approved_person_birth_date' => $payload['person_birth_date'],
             'adjustment_message' => null,
             'adjustment_requested_at' => null,
         ])->save();

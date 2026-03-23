@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CSSProperties, ReactNode, useEffect, useMemo, useState } from "react";
 import { FaWhatsapp } from "react-icons/fa6";
+import { apiFetch } from "../lib/api";
+import { getPageLabel, getStoredVisitorSessionKey, trackInteraction } from "../lib/analytics";
 import AnalyticsProvider from "./analytics-provider";
 import styles from "./site-shell.module.css";
 
@@ -30,6 +32,11 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
   const [scrollOffset, setScrollOffset] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
+  const [whatsModalOpen, setWhatsModalOpen] = useState(false);
+  const [whatsName, setWhatsName] = useState("");
+  const [whatsPhone, setWhatsPhone] = useState("");
+  const [whatsLoading, setWhatsLoading] = useState(false);
+  const [whatsError, setWhatsError] = useState<string | null>(null);
 
   useEffect(() => {
     let frameId = 0;
@@ -111,6 +118,77 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
       }) as CSSProperties,
     [pointer.x, pointer.y, scrollOffset, scrollProgress],
   );
+
+  const openWhatsModal = () => {
+    setWhatsError(null);
+    setWhatsModalOpen(true);
+  };
+
+  const submitWhatsModal = async () => {
+    const cleanPhone = whatsPhone.replace(/\D/g, "");
+    if (!whatsName.trim() || cleanPhone.length < 10) {
+      setWhatsError("Informe nome e WhatsApp valido para continuar.");
+      return;
+    }
+
+    setWhatsLoading(true);
+    setWhatsError(null);
+
+    try {
+      await apiFetch("/contacts", {
+        method: "POST",
+        body: JSON.stringify({
+          name: whatsName.trim(),
+          phone: whatsPhone.trim(),
+          email: null,
+          company: null,
+          message: "Lead originado via botao do WhatsApp no site.",
+          session_key: getStoredVisitorSessionKey(),
+          source_url: window.location.href,
+          referrer: document.referrer || null,
+          metadata: {
+            source: "whatsapp-float",
+            capture_kind: "submitted",
+            page_name: getPageLabel(pathname),
+          },
+        }),
+      });
+
+      await trackInteraction({
+        eventType: "whatsapp_form_submitted",
+        element: "modal",
+        label: "whatsapp-float",
+        pagePath: pathname,
+        metadata: {
+          event_name: "Formulario botao do WhatsApp",
+          where: getPageLabel(pathname),
+        },
+      });
+
+      await trackInteraction({
+        eventType: "whatsapp_button_click",
+        element: "button",
+        label: "whatsapp-float",
+        pagePath: pathname,
+        metadata: {
+          event_name: "Clique botao WhatsApp",
+          where: getPageLabel(pathname),
+        },
+      });
+
+      const url = `https://wa.me/5519982214340?text=${encodeURIComponent(
+        `Olá, sou ${whatsName.trim()} e meu WhatsApp é ${whatsPhone.trim()}.`,
+      )}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      setWhatsModalOpen(false);
+      setWhatsName("");
+      setWhatsPhone("");
+    } catch (requestError) {
+      setWhatsError(requestError instanceof Error ? requestError.message : "Nao foi possivel registrar o contato.");
+    } finally {
+      setWhatsLoading(false);
+    }
+  };
 
   return (
     <div className={styles.page} style={pageStyle}>
@@ -214,16 +292,61 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
       </footer>
 
       <a
-        href="https://wa.me/5519982214340"
-        target="_blank"
-        rel="noreferrer"
+        href="#"
         aria-label="Falar no WhatsApp"
         className={styles.whatsappFloat}
         data-track
         data-track-type="whatsapp"
+        onClick={(event) => {
+          event.preventDefault();
+          openWhatsModal();
+        }}
       >
         <FaWhatsapp aria-hidden="true" />
       </a>
+
+      {whatsModalOpen && (
+        <div className={styles.whatsModalWrap}>
+          <div className={styles.whatsModal}>
+            <div className={styles.whatsHeader}>
+              <p>Continuar no WhatsApp</p>
+              <button
+                type="button"
+                onClick={() => setWhatsModalOpen(false)}
+                className={styles.whatsClose}
+              >
+                ×
+              </button>
+            </div>
+            <p className={styles.whatsSub}>Antes de abrir, confirme seus dados:</p>
+            <input
+              type="text"
+              placeholder="Seu nome"
+              value={whatsName}
+              onChange={(event) => setWhatsName(event.target.value)}
+              className={styles.whatsInput}
+            />
+            <input
+              type="text"
+              placeholder="Seu WhatsApp"
+              value={whatsPhone}
+              onChange={(event) => setWhatsPhone(event.target.value)}
+              className={styles.whatsInput}
+            />
+            {whatsError && <p className={styles.whatsError}>{whatsError}</p>}
+            <button
+              type="button"
+              onClick={() => {
+                void submitWhatsModal();
+              }}
+              disabled={whatsLoading}
+              className={styles.whatsSubmit}
+            >
+              {whatsLoading ? "Abrindo..." : "Abrir WhatsApp"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

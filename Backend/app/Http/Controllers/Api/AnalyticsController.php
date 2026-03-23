@@ -165,6 +165,10 @@ class AnalyticsController extends Controller
         return match ($eventType) {
             'contact_submit' => 'contact_form_submit',
             'proposal_opened' => 'proposal_open',
+            'contact_form_open' => 'lead_form_fill_started',
+            'contact_form_submit' => 'lead_form_submitted',
+            'cta_click' => 'cta_request_proposal_click',
+            'whatsapp_click' => 'whatsapp_button_click',
             default => $eventType,
         };
     }
