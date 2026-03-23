@@ -123,8 +123,13 @@ class BudgetService
             ]);
         }
 
+        $metadata = is_array($contact->metadata) ? $contact->metadata : [];
+        $metadata['proposal_status'] = 'sent';
+        $metadata['proposal_slug'] = $budget->slug;
+
         $contact->forceFill([
             'deal_value' => $totalAmount,
+            'metadata' => $metadata,
         ])->save();
 
         $this->storeVersionSnapshot($budget, null);

@@ -44,13 +44,22 @@ class PublicProposalController extends Controller
 
     public function approve(string $slug): JsonResponse
     {
-        $budget = Budget::query()->where('slug', $slug)->firstOrFail();
+        $budget = Budget::query()->with('contact')->where('slug', $slug)->firstOrFail();
         $budget->forceFill([
             'status' => 'approved',
             'approved_at' => now(),
             'adjustment_message' => null,
             'adjustment_requested_at' => null,
         ])->save();
+
+        if ($budget->contact) {
+            $metadata = is_array($budget->contact->metadata) ? $budget->contact->metadata : [];
+            $metadata['proposal_status'] = 'approved';
+
+            $budget->contact->forceFill([
+                'metadata' => $metadata,
+            ])->save();
+        }
 
         return response()->json([
             'message' => 'Proposta aprovada com sucesso.',
@@ -70,6 +79,15 @@ class PublicProposalController extends Controller
             'adjustment_requested_at' => now(),
         ])->save();
 
+        if ($budget->contact) {
+            $metadata = is_array($budget->contact->metadata) ? $budget->contact->metadata : [];
+            $metadata['proposal_status'] = 'adjustment_requested';
+
+            $budget->contact->forceFill([
+                'metadata' => $metadata,
+            ])->save();
+        }
+
         AdminNotification::query()->create([
             'type' => 'proposal_adjustment',
             'title' => 'Solicitacao de ajuste em proposta',
@@ -88,4 +106,3 @@ class PublicProposalController extends Controller
         ]);
     }
 }
-

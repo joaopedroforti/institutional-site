@@ -1088,6 +1088,8 @@ export default function PipesPage() {
                     const hasEmail = Boolean(lead.email);
                     const hasPhone = Boolean(lead.phone);
                     const whatsapp = hasPhone ? cleanPhoneForWa(lead.phone ?? "") : "";
+                    const proposalApproved =
+                      column.slug === "orcamento" && String(lead.metadata?.proposal_status ?? "") === "approved";
 
                     return (
                       <div
@@ -1097,7 +1099,9 @@ export default function PipesPage() {
                         onClick={() => {
                           void openLeadDetails(lead);
                         }}
-                        className="relative cursor-pointer rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md"
+                        className={`relative cursor-pointer rounded-xl border p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md ${
+                          proposalApproved ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-white"
+                        }`}
                       >
                         <span
                           className={`absolute -right-3 -top-3 inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1 text-[11px] font-semibold ${scoreStyles(lead.score_band)}`}
