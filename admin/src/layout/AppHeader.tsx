@@ -11,13 +11,16 @@ const TITLES: Record<string, string> = {
   "/admin/orcamentos": "Propostas",
   "/admin/propostas": "Propostas",
   "/admin/whatsapp": "WhatsApp",
-  "/admin/analitico": "Analitico",
   "/admin/configuracoes": "Configuracoes",
   "/admin/configuracoes/vendedores": "Vendedores",
-  "/admin/configuracoes/propostas": "Propostas",
-  "/admin/configuracoes/gerais": "Configuracoes Gerais",
+  "/admin/configuracoes/propostas": "Prazos",
+  "/admin/configuracoes/gerais": "Geral",
+  "/admin/configuracoes/empresa": "Informacoes da Empresa",
   "/admin/configuracoes/precificacao": "Precificacao",
   "/admin/configuracoes/whatsapp": "WhatsApp",
+  "/admin/configuracoes/integracoes": "Integracoes",
+  "/admin/configuracoes/regras-score": "Regras de Score",
+  "/admin/configuracoes/origens-tags": "Mapeamento de Origem e Tags",
 };
 
 export default function AppHeader() {
@@ -114,7 +117,7 @@ export default function AppHeader() {
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    navigate("/admin/configuracoes/vendedores");
+                    navigate("/admin/configuracoes");
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
                 >

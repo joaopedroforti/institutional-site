@@ -3,6 +3,7 @@ import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
 import type { PricingProjectSetting, PricingRuleItem, PricingSettingsResponse } from "../../types/admin";
+import LoadingState from "../../components/common/LoadingState";
 
 type RuleMap = Record<string, PricingRuleItem[]>;
 
@@ -160,7 +161,7 @@ export default function PrecificacaoPage() {
           </button>
         </div>
 
-        {loading && <p className="text-sm text-slate-500">Carregando regras...</p>}
+        {loading && <LoadingState label="Carregando regras..." />}
 
         {!loading && (
           <div className="space-y-5">

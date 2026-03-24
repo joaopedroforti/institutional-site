@@ -1,5 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BarChart3,
   Plus,
   Settings2,
   X,
@@ -20,17 +21,23 @@ import {
   HandCoins,
   FolderKanban,
   NotebookPen,
+  Flame,
+  Timer,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
+import LoadingState from "../../components/common/LoadingState";
+import AlertModal from "../../components/common/AlertModal";
 import type {
   KanbanColumn,
   KanbanLead,
   KanbanResponse,
   LostReasonOption,
   PipeOption,
+  SourceMappingsResponse,
+  SourceTagMappingRule,
   WhatsAppConversationPayloadResponse,
   WhatsAppConversationRecord,
   WhatsAppMessageRecord,
@@ -235,7 +242,11 @@ function scoreStyles(band?: string | null): string {
   return "bg-slate-500 text-white ring-4 ring-slate-100";
 }
 
-function detectContactTags(lead: KanbanLead, details?: Record<string, unknown> | null): string[] {
+function detectContactTags(
+  lead: KanbanLead,
+  details?: Record<string, unknown> | null,
+  mappingRules: SourceTagMappingRule[] = [],
+): string[] {
   const tags = new Set<string>();
 
   (lead.tags ?? []).forEach((tag) => {
@@ -247,18 +258,30 @@ function detectContactTags(lead: KanbanLead, details?: Record<string, unknown> |
   const source = `${lead.source_url ?? ""} ${(lead.metadata?.source ?? "") as string}`.toLowerCase();
   const isDirectWhatsAppLead = source.includes("whatsapp:inbound") || Boolean(lead.metadata?.auto_created_from_whatsapp);
 
-  if (isDirectWhatsAppLead) {
-    tags.add("WhatsApp Direto");
-  } else if (source.includes("whatsapp") || source.includes("zap") || source.includes("wa.me")) {
-    tags.add("Botao WhatsApp");
-  }
+  if (mappingRules.length > 0) {
+    mappingRules
+      .filter((rule) => Boolean(rule.is_active) && rule.contains && rule.label)
+      .sort((a, b) => Number(b.priority ?? 0) - Number(a.priority ?? 0))
+      .forEach((rule) => {
+        const needle = String(rule.contains ?? "").toLowerCase().trim();
+        if (needle !== "" && source.includes(needle)) {
+          tags.add(String(rule.label));
+        }
+      });
+  } else {
+    if (isDirectWhatsAppLead) {
+      tags.add("WhatsApp Direto");
+    } else if (source.includes("whatsapp") || source.includes("zap") || source.includes("wa.me")) {
+      tags.add("Botao WhatsApp");
+    }
 
-  if (source.includes("contato") || source.includes("contact")) {
-    tags.add("Formulario de contato");
-  }
+    if (source.includes("contato") || source.includes("contact")) {
+      tags.add("Formulario de contato");
+    }
 
-  if (source.includes("onboarding")) {
-    tags.add("Formulario onboarding");
+    if (source.includes("onboarding")) {
+      tags.add("Formulario onboarding");
+    }
   }
 
   const timeline = (details?.tracking as { timeline?: Array<Record<string, unknown>> } | undefined)?.timeline ?? [];
@@ -366,6 +389,7 @@ export default function PipesPage() {
 
   const [settingsColumns, setSettingsColumns] = useState<EditableColumn[]>([]);
   const [deletedColumnIds, setDeletedColumnIds] = useState<number[]>([]);
+  const [pendingColumnRemovalIndex, setPendingColumnRemovalIndex] = useState<number | null>(null);
 
   const [pendingLostMove, setPendingLostMove] = useState<{
     leadId: number;
@@ -375,6 +399,8 @@ export default function PipesPage() {
   const [lostReasonCustom, setLostReasonCustom] = useState("");
 
   const [draggedLead, setDraggedLead] = useState<KanbanLead | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [onboardingPrompt, setOnboardingPrompt] = useState<{ url: string; leadName: string } | null>(null);
   const [copiedOnboardingUrl, setCopiedOnboardingUrl] = useState(false);
   const [selectedLead, setSelectedLead] = useState<KanbanLead | null>(null);
@@ -399,6 +425,8 @@ export default function PipesPage() {
   const [tagDraft, setTagDraft] = useState("");
   const [tagColorDraft, setTagColorDraft] = useState("#2563eb");
   const [savingTag, setSavingTag] = useState(false);
+  const [sourceMappingRules, setSourceMappingRules] = useState<SourceTagMappingRule[]>([]);
+  const leadQueryToOpenRef = useRef<number | null>(null);
 
   const userOptions = useMemo(
     () => extractUserOptions(leadDetails, user?.name, user?.id),
@@ -427,17 +455,19 @@ export default function PipesPage() {
       return;
     }
 
-    const [pipesResp, reasonsResp, quickRepliesResp, tagResp] = await Promise.all([
+    const [pipesResp, reasonsResp, quickRepliesResp, tagResp, sourceMappingsResp] = await Promise.all([
       apiRequest<{ data: PipeOption[] }>("/api/admin/pipes", {}, token),
       apiRequest<{ data: LostReasonOption[] }>("/api/admin/kanban/lost-reasons", {}, token),
       apiRequest<{ data: WhatsAppQuickReplyRecord[] }>("/api/admin/whatsapp/quick-replies", {}, token),
       apiRequest<{ data: WhatsAppTagRecord[] }>("/api/admin/whatsapp/tags", {}, token),
+      apiRequest<SourceMappingsResponse>("/api/admin/settings/source-mappings", {}, token),
     ]);
 
     setPipes(pipesResp.data);
     setLostReasons(reasonsResp.data);
     setWhatsappQuickReplies(quickRepliesResp.data ?? []);
     setTagCatalog(tagResp.data ?? []);
+    setSourceMappingRules(sourceMappingsResp.data.rules ?? []);
   };
 
   const loadBoard = async (pipe: string, syncSettings = true, silent = false) => {
@@ -494,9 +524,15 @@ export default function PipesPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const pipeParam = params.get("pipe") ?? "comercial";
+    const leadParam = params.get("lead");
+    const leadId = leadParam ? Number(leadParam) : Number.NaN;
 
     if (pipeParam !== pipeline) {
       setPipeline(pipeParam);
+    }
+
+    if (Number.isFinite(leadId) && leadId > 0) {
+      leadQueryToOpenRef.current = leadId;
     }
   }, [location.search, pipeline]);
 
@@ -536,6 +572,34 @@ export default function PipesPage() {
     return () => window.clearInterval(timer);
   }, [token, pipeline, isAddOpen, isSettingsOpen, pendingLostMove, selectedLead]);
 
+  useEffect(() => {
+    const pendingLeadId = leadQueryToOpenRef.current;
+    if (!pendingLeadId || columns.length === 0) {
+      return;
+    }
+
+    const lead = columns
+      .flatMap((column) => column.contacts ?? [])
+      .find((item) => item.id === pendingLeadId);
+
+    if (!lead) {
+      return;
+    }
+
+    leadQueryToOpenRef.current = null;
+    void openLeadDetails(lead);
+
+    const params = new URLSearchParams(location.search);
+    params.delete("lead");
+    navigate(
+      {
+        pathname: location.pathname,
+        search: params.toString() ? `?${params.toString()}` : "",
+      },
+      { replace: true },
+    );
+  }, [columns, location.pathname, location.search, navigate]);
+
   const handlePipelineChange = async (next: string) => {
     navigate(`/admin/pipes?pipe=${next}`);
   };
@@ -570,7 +634,7 @@ export default function PipesPage() {
 
   const mainSiteBaseUrl = import.meta.env.VITE_MAIN_SITE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 
-  const performMove = async (lead: KanbanLead, targetColumn: KanbanColumn) => {
+  const performMove = async (lead: KanbanLead, targetColumn: KanbanColumn, leadOrder = 9999) => {
     if (!token) {
       return;
     }
@@ -583,7 +647,7 @@ export default function PipesPage() {
           method: "PATCH",
           body: JSON.stringify({
             lead_kanban_column_id: targetColumn.id,
-            lead_order: 9999,
+            lead_order: leadOrder,
           }),
         },
         token,
@@ -714,13 +778,30 @@ export default function PipesPage() {
     }
   };
 
-  const handleDropToColumn = async (targetColumn: KanbanColumn) => {
+  const handleDropToColumn = async (targetColumn: KanbanColumn, targetIndex?: number) => {
     if (!draggedLead || savingMove) {
       return;
     }
 
-    await performMove(draggedLead, targetColumn);
+    const sourceColumn = columns.find((column) => (column.contacts ?? []).some((lead) => lead.id === draggedLead.id));
+    const sourceIndex = sourceColumn?.contacts.findIndex((lead) => lead.id === draggedLead.id) ?? -1;
+
+    let nextOrder = typeof targetIndex === "number" ? targetIndex : targetColumn.contacts.length;
+    if (sourceColumn && sourceColumn.id === targetColumn.id && sourceIndex >= 0 && sourceIndex < nextOrder) {
+      nextOrder -= 1;
+    }
+
+    if (sourceColumn && sourceColumn.id === targetColumn.id && sourceIndex === nextOrder) {
+      setDraggedLead(null);
+      setDragOverColumnId(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    await performMove(draggedLead, targetColumn, Math.max(0, nextOrder));
     setDraggedLead(null);
+    setDragOverColumnId(null);
+    setDragOverIndex(null);
   };
 
   const saveLostReasonAndReject = async () => {
@@ -1131,6 +1212,7 @@ export default function PipesPage() {
       );
 
       setIsSettingsOpen(false);
+      setPendingColumnRemovalIndex(null);
       await loadBoard(pipeline);
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : "Falha ao salvar configuracoes.");
@@ -1147,6 +1229,24 @@ export default function PipesPage() {
   const canProjectFinalize = currentLeadPipe === "cs" && currentLeadStageSlug !== "projeto-finalizado";
 
   const pipeLabel = useMemo(() => PIPE_LABELS[pipeline] ?? "Comercial", [pipeline]);
+  const allVisibleCards = useMemo(() => columns.flatMap((column) => column.contacts ?? []), [columns]);
+  const highPriorityCards = useMemo(
+    () => allVisibleCards.filter((lead) => Number(lead.lead_score ?? 0) >= 80).length,
+    [allVisibleCards],
+  );
+  const stalledCards = useMemo(
+    () => allVisibleCards.filter((lead) => daysInStage(lead.stage_entered_at) >= 7).length,
+    [allVisibleCards],
+  );
+  const averageScore = useMemo(() => {
+    if (allVisibleCards.length === 0) {
+      return 0;
+    }
+
+    const total = allVisibleCards.reduce((sum, lead) => sum + Number(lead.lead_score ?? 0), 0);
+    return total / allVisibleCards.length;
+  }, [allVisibleCards]);
+
   const modalStageColumns = useMemo(
     () =>
       [...columns]
@@ -1168,8 +1268,8 @@ export default function PipesPage() {
       return explicitTags;
     }
 
-    return detectContactTags(selectedLead, leadDetails);
-  }, [selectedLead, leadDetails]);
+    return detectContactTags(selectedLead, leadDetails, sourceMappingRules);
+  }, [selectedLead, leadDetails, sourceMappingRules]);
 
   const timelineItems = useMemo(() => {
     const tracking = leadDetails?.tracking as { timeline?: Array<Record<string, unknown>> } | undefined;
@@ -1374,15 +1474,16 @@ export default function PipesPage() {
     <PageShell>
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-      <section className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+      <section className="rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Visualizando</span>
             <select
               value={pipeline}
               onChange={(event) => {
                 void handlePipelineChange(event.target.value);
               }}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"
             >
               {pipes.map((pipe) => (
                 <option key={pipe.key} value={pipe.key}>
@@ -1391,12 +1492,24 @@ export default function PipesPage() {
               ))}
             </select>
           </div>
+        </div>
+      </section>
 
-          <div className="flex items-center gap-2">
+      <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 p-5 text-white shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.16em] text-blue-100">Pipe Comercial</p>
+            <h2 className="mt-1 text-2xl font-semibold">Gestao de Negocios - {pipeLabel}</h2>
+            <p className="mt-1 text-sm text-blue-50">
+              Controle o funil com visao de prioridade, tempo em etapa e distribuicao em tempo real.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setIsSettingsOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20"
             >
               <Settings2 size={16} />
               Configurar Pipe
@@ -1404,39 +1517,114 @@ export default function PipesPage() {
             <button
               type="button"
               onClick={() => setIsAddOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600"
+              className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
             >
               <Plus size={16} />
-              Adicionar
+              Novo Card
             </button>
           </div>
         </div>
       </section>
 
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-500">
+            <BarChart3 size={16} />
+            <span className="text-xs uppercase tracking-wide">Cards no pipe</span>
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{allVisibleCards.length}</p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-emerald-600">
+            <Flame size={16} />
+            <span className="text-xs uppercase tracking-wide text-slate-500">Prioridade alta</span>
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{highPriorityCards}</p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-amber-600">
+            <Timer size={16} />
+            <span className="text-xs uppercase tracking-wide text-slate-500">Parados (+7 dias)</span>
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{stalledCards}</p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-blue-600">
+            <Rocket size={16} />
+            <span className="text-xs uppercase tracking-wide text-slate-500">Score medio</span>
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{averageScore.toFixed(0)}</p>
+        </article>
+      </section>
+
       {loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Carregando kanban...</div>
+        <LoadingState label="Carregando kanban..." className="rounded-xl p-4" />
       ) : (
-        <section className="overflow-x-auto">
-          <div className="grid min-w-[1200px] grid-flow-col auto-cols-[340px] gap-3">
+        <section className="overflow-x-auto pb-1">
+          <div className="grid min-w-[1240px] grid-flow-col auto-cols-[360px] gap-4">
             {columns.map((column) => (
               <article
                 key={column.id}
-                className="rounded-xl border border-slate-200 bg-white"
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={() => {
-                  void handleDropToColumn(column);
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragOverColumnId(column.id);
+                  setDragOverIndex(column.contacts.length);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  void handleDropToColumn(column, dragOverColumnId === column.id ? (dragOverIndex ?? column.contacts.length) : column.contacts.length);
+                }}
+                onDragLeave={(event) => {
+                  if (event.currentTarget.contains(event.relatedTarget as Node)) {
+                    return;
+                  }
+                  if (dragOverColumnId === column.id) {
+                    setDragOverColumnId(null);
+                    setDragOverIndex(null);
+                  }
                 }}
               >
-                <header className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">{column.name}</h3>
-                    <p className="text-xs text-slate-500">{column.contacts.length} cards</p>
+                <header className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Etapa</p>
+                      <h3 className="text-sm font-semibold text-slate-900">{column.name}</h3>
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600">
+                      {column.contacts.length}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                    <span>{column.contacts.length} cards nesta etapa</span>
+                    <span>•</span>
+                    <span>
+                      Media de {column.contacts.length > 0
+                        ? Math.round(
+                            column.contacts.reduce((sum, lead) => sum + daysInStage(lead.stage_entered_at), 0) /
+                              column.contacts.length,
+                          )
+                        : 0} dias
+                    </span>
                   </div>
                 </header>
 
-                <div className="max-h-[70vh] space-y-3 overflow-y-auto p-3">
-                  {column.contacts.map((lead) => {
-                    const tags = detectContactTags(lead, null);
+                <div className="max-h-[70vh] space-y-3 overflow-y-auto bg-slate-50/70 p-3">
+                  {column.contacts.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-sm text-slate-500">
+                      Nenhum card nesta etapa.
+                    </div>
+                  )}
+                  {dragOverColumnId === column.id && dragOverIndex === 0 && (
+                    <div className="rounded-lg border-2 border-dashed border-blue-400 bg-blue-50/70 px-3 py-3 text-center text-xs font-medium text-blue-700">
+                      Solte aqui para posicionar no topo
+                    </div>
+                  )}
+                  {column.contacts.map((lead, index) => {
+                    const tags = detectContactTags(lead, null, sourceMappingRules);
                     const hasEmail = Boolean(lead.email);
                     const hasPhone = Boolean(lead.phone);
                     const whatsapp = hasPhone ? cleanPhoneForWa(lead.phone ?? "") : "";
@@ -1444,67 +1632,100 @@ export default function PipesPage() {
                       column.slug === "orcamento" && String(lead.metadata?.proposal_status ?? "") === "approved";
 
                     return (
-                      <div
-                        key={lead.id}
-                        draggable
-                        onDragStart={() => setDraggedLead(lead)}
-                        onClick={() => {
-                          void openLeadDetails(lead);
-                        }}
-                        className={`relative cursor-pointer rounded-xl border p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md ${
-                          proposalApproved ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-white"
-                        }`}
-                      >
-                        <span
-                          className={`absolute -right-3 -top-3 inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1 text-[11px] font-semibold ${scoreStyles(lead.score_band)}`}
-                          title={`Score ${lead.lead_score ?? 0}`}
+                      <div key={lead.id}>
+                        {dragOverColumnId === column.id && dragOverIndex === index && (
+                          <div className="mb-2 rounded-lg border-2 border-dashed border-blue-400 bg-blue-50/70 px-3 py-3 text-center text-xs font-medium text-blue-700">
+                            Solte aqui para reposicionar
+                          </div>
+                        )}
+                        <div
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData("text/plain", String(lead.id));
+                            setDraggedLead(lead);
+                            setDragOverColumnId(column.id);
+                            setDragOverIndex(index);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedLead(null);
+                            setDragOverColumnId(null);
+                            setDragOverIndex(null);
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setDragOverColumnId(column.id);
+                            setDragOverIndex(index);
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            void handleDropToColumn(column, index);
+                          }}
+                          onClick={() => {
+                            void openLeadDetails(lead);
+                          }}
+                          className={`relative cursor-pointer rounded-xl border p-3 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md ${
+                            proposalApproved ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-white"
+                          }`}
                         >
-                          {lead.lead_score ?? 0}
-                        </span>
+                          <span
+                            className={`absolute -right-3 -top-3 inline-flex h-8 min-w-8 items-center justify-center rounded-full px-1 text-[11px] font-semibold ${scoreStyles(lead.score_band)}`}
+                            title={`Score ${lead.lead_score ?? 0}`}
+                          >
+                            {lead.lead_score ?? 0}
+                          </span>
 
-                        <div className="pr-8">
-                          <h4 className="text-sm font-semibold text-slate-900">
-                            {lead.name}
-                            {lead.company ? ` - ${lead.company}` : ""}
-                          </h4>
+                          <div className="pr-8">
+                            <h4 className="text-sm font-semibold text-slate-900">
+                              {lead.name}
+                              {lead.company ? ` - ${lead.company}` : ""}
+                            </h4>
 
-                          <div className="mt-1 text-xs text-slate-600">
-                            {hasEmail && <span>{lead.email}</span>}
-                            {hasEmail && hasPhone && <span className="px-1">|</span>}
-                            {hasPhone && (
-                              <a
-                                href={`https://wa.me/55${whatsapp}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-medium text-green-700 hover:underline"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                {lead.phone}
-                              </a>
-                            )}
-                          </div>
+                            <div className="mt-1 text-xs text-slate-600">
+                              {hasEmail && <span>{lead.email}</span>}
+                              {hasEmail && hasPhone && <span className="px-1">|</span>}
+                              {hasPhone && (
+                                <a
+                                  href={`https://wa.me/55${whatsapp}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="font-medium text-green-700 hover:underline"
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  {lead.phone}
+                                </a>
+                              )}
+                            </div>
 
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {tags.map((tag) => (
-                              <span
-                                key={`${lead.id}-${tag}`}
-                                className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {tags.map((tag) => (
+                                <span
+                                  key={`${lead.id}-${tag}`}
+                                  className="rounded-md border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
 
-                          <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
-                            <Clock3 size={12} />
-                            <span>{formatDate(lead.stage_entered_at)}</span>
-                            <span>•</span>
-                            <span>{daysInStage(lead.stage_entered_at)} dias</span>
+                            <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
+                              <Clock3 size={12} />
+                              <span>{formatDate(lead.stage_entered_at)}</span>
+                              <span>•</span>
+                              <span>{daysInStage(lead.stage_entered_at)} dias</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                  {dragOverColumnId === column.id && dragOverIndex === column.contacts.length && column.contacts.length > 0 && (
+                    <div className="rounded-lg border-2 border-dashed border-blue-400 bg-blue-50/70 px-3 py-3 text-center text-xs font-medium text-blue-700">
+                      Solte aqui para posicionar no final
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
@@ -1570,7 +1791,13 @@ export default function PipesPage() {
           <aside className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-white p-4 shadow-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-base font-semibold text-slate-900">Configurar etapas do pipe {pipeLabel}</h3>
-              <button type="button" onClick={() => setIsSettingsOpen(false)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setPendingColumnRemovalIndex(null);
+                }}
+              >
                 <X size={18} className="text-slate-500" />
               </button>
             </div>
@@ -1610,7 +1837,7 @@ export default function PipesPage() {
                     <button
                       type="button"
                       disabled={column.is_locked}
-                      onClick={() => removeSettingsColumn(index)}
+                      onClick={() => setPendingColumnRemovalIndex(index)}
                       className="col-span-1 text-xs text-red-600 disabled:text-slate-300"
                     >
                       X
@@ -1636,7 +1863,10 @@ export default function PipesPage() {
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setIsSettingsOpen(false)}
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setPendingColumnRemovalIndex(null);
+                }}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
                 Cancelar
@@ -2387,6 +2617,24 @@ export default function PipesPage() {
           </div>
         </div>
       )}
+
+      <AlertModal
+        open={pendingColumnRemovalIndex !== null}
+        title="Remover etapa do pipe"
+        description="Ao confirmar, essa etapa sera removida da configuracao atual. Essa acao pode impactar o fluxo dos cards."
+        confirmLabel="Remover etapa"
+        cancelLabel="Cancelar"
+        intent="danger"
+        onConfirm={async () => {
+          if (pendingColumnRemovalIndex === null) {
+            return;
+          }
+
+          removeSettingsColumn(pendingColumnRemovalIndex);
+          setPendingColumnRemovalIndex(null);
+        }}
+        onClose={() => setPendingColumnRemovalIndex(null)}
+      />
     </PageShell>
   );
 }

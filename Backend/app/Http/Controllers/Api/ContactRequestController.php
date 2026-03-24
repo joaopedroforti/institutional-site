@@ -74,6 +74,7 @@ class ContactRequestController extends Controller
         );
 
         if ($existingLead && $captureKind === 'draft') {
+            $scoreRules = $leadAnalytics->scoreRules();
             $mergedMetadata = array_filter([
                 ...(is_array($existingLead->metadata) ? $existingLead->metadata : []),
                 ...($payload['metadata'] ?? []),
@@ -91,8 +92,8 @@ class ContactRequestController extends Controller
 
             $leadAnalytics->refreshLeadScore($existingLead);
             $existingLead->forceFill([
-                'lead_score' => min((int) ($existingLead->lead_score ?? 10), 12),
-                'score_band' => 'cold',
+                'lead_score' => min((int) ($existingLead->lead_score ?? 10), (int) ($scoreRules['draft_max_score'] ?? 12)),
+                'score_band' => (string) ($scoreRules['draft_score_band'] ?? 'cold'),
             ])->save();
 
             return response()->json([
@@ -180,9 +181,10 @@ class ContactRequestController extends Controller
         $leadAnalytics->refreshLeadScore($contact);
 
         if ($captureKind === 'draft') {
+            $scoreRules = $leadAnalytics->scoreRules();
             $contact->forceFill([
-                'lead_score' => min((int) ($contact->lead_score ?? 10), 12),
-                'score_band' => 'cold',
+                'lead_score' => min((int) ($contact->lead_score ?? 10), (int) ($scoreRules['draft_max_score'] ?? 12)),
+                'score_band' => (string) ($scoreRules['draft_score_band'] ?? 'cold'),
             ])->save();
         }
 

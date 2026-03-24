@@ -8,12 +8,15 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import PipesPage from "./pages/admin/PipesPage";
 import OrcamentosPage from "./pages/admin/OrcamentosPage";
 import PropostasPage from "./pages/admin/PropostasPage";
-import AnaliticoPage from "./pages/admin/AnaliticoPage";
 import VendedoresPage from "./pages/admin/VendedoresPage";
 import PrecificacaoPage from "./pages/admin/PrecificacaoPage";
 import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
 import WhatsAppPage from "./pages/admin/WhatsAppPage";
 import WhatsAppSettingsPage from "./pages/admin/WhatsAppSettingsPage";
+import SettingsHomePage from "./pages/admin/SettingsHomePage";
+import IntegracoesSettingsPage from "./pages/admin/IntegracoesSettingsPage";
+import ScoreRulesSettingsPage from "./pages/admin/ScoreRulesSettingsPage";
+import SourceMappingsSettingsPage from "./pages/admin/SourceMappingsSettingsPage";
 
 function NotFoundPage() {
   return (
@@ -46,13 +49,17 @@ export default function App() {
             <Route path="/admin/orcamentos" element={<OrcamentosPage />} />
             <Route path="/admin/propostas" element={<Navigate to="/admin/configuracoes/propostas" replace />} />
             <Route path="/admin/whatsapp" element={<WhatsAppPage />} />
-            <Route path="/admin/analitico" element={<AnaliticoPage />} />
-            <Route path="/admin/configuracoes" element={<Navigate to="/admin/configuracoes/vendedores" replace />} />
+            <Route path="/admin/analitico" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/configuracoes" element={<SettingsHomePage />} />
             <Route path="/admin/configuracoes/vendedores" element={<VendedoresPage />} />
             <Route path="/admin/configuracoes/propostas" element={<PropostasPage />} />
             <Route path="/admin/configuracoes/gerais" element={<ConfiguracoesPage />} />
+            <Route path="/admin/configuracoes/empresa" element={<ConfiguracoesPage />} />
             <Route path="/admin/configuracoes/precificacao" element={<PrecificacaoPage />} />
             <Route path="/admin/configuracoes/whatsapp" element={<WhatsAppSettingsPage />} />
+            <Route path="/admin/configuracoes/integracoes" element={<IntegracoesSettingsPage />} />
+            <Route path="/admin/configuracoes/regras-score" element={<ScoreRulesSettingsPage />} />
+            <Route path="/admin/configuracoes/origens-tags" element={<SourceMappingsSettingsPage />} />
           </Route>
         </Route>
 

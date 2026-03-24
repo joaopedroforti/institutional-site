@@ -4,6 +4,7 @@ import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
 import type { WhatsAppProfileResponse, WhatsAppSettingsResponse } from "../../types/admin";
+import LoadingState from "../../components/common/LoadingState";
 
 type ProfileForm = {
   profile_name: string;
@@ -208,10 +209,7 @@ export default function WhatsAppSettingsPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Loader2 size={14} className="animate-spin" />
-            Carregando configuracoes de WhatsApp...
-          </div>
+          <LoadingState label="Carregando configuracoes de WhatsApp..." className="p-4" />
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

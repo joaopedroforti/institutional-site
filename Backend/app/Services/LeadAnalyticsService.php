@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Schema;
 
 class LeadAnalyticsService
 {
+    private const SCORE_RULES_KEY = 'lead_score_rules';
+    private ?array $scoreRulesCache = null;
+
     public function buildLeadMetrics(ContactRequest $lead): array
     {
         $sessions = $this->resolveSessionsForLead($lead);
@@ -181,6 +184,8 @@ class LeadAnalyticsService
             return;
         }
 
+        $rules = $this->scoreRules();
+
         $metrics = $this->buildLeadMetrics($lead);
         $sessions = $this->resolveSessionsForLead($lead);
         $sessionIds = $sessions->pluck('id')->all();
@@ -198,19 +203,25 @@ class LeadAnalyticsService
         $score = 0;
 
         if (! empty($metrics['origin']['utm_source'])) {
-            $score += 10;
+            $score += (int) ($rules['utm_source_bonus'] ?? 10);
         }
 
-        $score += min((int) $metrics['total_page_views'] * 2, 20);
+        $score += min(
+            (int) $metrics['total_page_views'] * (int) ($rules['page_view_weight'] ?? 2),
+            (int) ($rules['page_view_cap'] ?? 20),
+        );
 
         if (! empty($metrics['accessed_contact_page'])) {
-            $score += 15;
+            $score += (int) ($rules['contact_page_bonus'] ?? 15);
         }
 
-        $score += min((int) $metrics['proposal_accesses'] * 15, 30);
+        $score += min(
+            (int) $metrics['proposal_accesses'] * (int) ($rules['proposal_access_weight'] ?? 15),
+            (int) ($rules['proposal_access_cap'] ?? 30),
+        );
 
         if (! empty($metrics['returned_after_proposal'])) {
-            $score += 10;
+            $score += (int) ($rules['returned_after_proposal_bonus'] ?? 10);
         }
 
         $formSubmitEvents = $events->whereIn('event_type', ['lead_form_submitted', 'contact_form_submit']);
@@ -218,21 +229,21 @@ class LeadAnalyticsService
         $ctaEvents = $events->whereIn('event_type', ['cta_request_proposal_click', 'cta_click']);
         $whatsappFormEvents = $events->where('event_type', 'whatsapp_form_submitted');
 
-        $score += min($formSubmitEvents->count() * 10, 20);
-        $score += min($whatsappClickEvents->count() * 8, 16);
-        $score += min($ctaEvents->count() * 4, 12);
-        $score += min($whatsappFormEvents->count() * 10, 20);
-        $score += $this->resolveOnboardingDeadlineBonus($lead);
+        $score += min($formSubmitEvents->count() * (int) ($rules['form_submit_weight'] ?? 10), (int) ($rules['form_submit_cap'] ?? 20));
+        $score += min($whatsappClickEvents->count() * (int) ($rules['whatsapp_click_weight'] ?? 8), (int) ($rules['whatsapp_click_cap'] ?? 16));
+        $score += min($ctaEvents->count() * (int) ($rules['cta_click_weight'] ?? 4), (int) ($rules['cta_click_cap'] ?? 12));
+        $score += min($whatsappFormEvents->count() * (int) ($rules['whatsapp_form_weight'] ?? 10), (int) ($rules['whatsapp_form_cap'] ?? 20));
+        $score += $this->resolveOnboardingDeadlineBonus($lead, (int) ($rules['onboarding_deadline_bonus_cap'] ?? 20));
 
         if ($metrics['total_page_views'] <= 1 && $events->count() === 0) {
-            $score = max($score - 5, 0);
+            $score = max($score - (int) ($rules['low_activity_penalty'] ?? 5), 0);
         }
 
         $band = 'cold';
 
-        if ($score >= 70) {
+        if ($score >= (int) ($rules['hot_min_score'] ?? 70)) {
             $band = 'hot';
-        } elseif ($score >= 35) {
+        } elseif ($score >= (int) ($rules['warm_min_score'] ?? 35)) {
             $band = 'warm';
         }
 
@@ -243,7 +254,7 @@ class LeadAnalyticsService
         ])->save();
     }
 
-    private function resolveOnboardingDeadlineBonus(ContactRequest $lead): int
+    private function resolveOnboardingDeadlineBonus(ContactRequest $lead, int $maxBonus = 20): int
     {
         $metadata = is_array($lead->metadata) ? $lead->metadata : [];
         $onboardingInternal = is_array($metadata['onboarding_internal'] ?? null) ? $metadata['onboarding_internal'] : null;
@@ -288,9 +299,69 @@ class LeadAnalyticsService
         }
 
         $normalized = ($maxDays - $days) / ($maxDays - $minDays);
-        $bonus = (int) round($normalized * 20);
+        $bonus = (int) round($normalized * max(0, $maxBonus));
 
-        return max(0, min(20, $bonus));
+        return max(0, min(max(0, $maxBonus), $bonus));
+    }
+
+    public function scoreRules(): array
+    {
+        if ($this->scoreRulesCache !== null) {
+            return $this->scoreRulesCache;
+        }
+
+        $defaults = [
+            'utm_source_bonus' => 10,
+            'page_view_weight' => 2,
+            'page_view_cap' => 20,
+            'contact_page_bonus' => 15,
+            'proposal_access_weight' => 15,
+            'proposal_access_cap' => 30,
+            'returned_after_proposal_bonus' => 10,
+            'form_submit_weight' => 10,
+            'form_submit_cap' => 20,
+            'whatsapp_click_weight' => 8,
+            'whatsapp_click_cap' => 16,
+            'cta_click_weight' => 4,
+            'cta_click_cap' => 12,
+            'whatsapp_form_weight' => 10,
+            'whatsapp_form_cap' => 20,
+            'onboarding_deadline_bonus_cap' => 20,
+            'low_activity_penalty' => 5,
+            'hot_min_score' => 70,
+            'warm_min_score' => 35,
+            'draft_max_score' => 12,
+            'draft_score_band' => 'cold',
+            'inbound_whatsapp_score' => 80,
+            'inbound_whatsapp_band' => 'hot',
+        ];
+
+        if (! Schema::hasTable('general_settings')) {
+            $this->scoreRulesCache = $defaults;
+
+            return $this->scoreRulesCache;
+        }
+
+        $raw = DB::table('general_settings')
+            ->where('setting_key', self::SCORE_RULES_KEY)
+            ->value('setting_value');
+
+        if (! is_string($raw) || trim($raw) === '') {
+            $this->scoreRulesCache = $defaults;
+
+            return $this->scoreRulesCache;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            $this->scoreRulesCache = $defaults;
+
+            return $this->scoreRulesCache;
+        }
+
+        $this->scoreRulesCache = array_replace($defaults, $decoded);
+
+        return $this->scoreRulesCache;
     }
 
     public function refreshLeadsBySession(VisitorSession $session): void

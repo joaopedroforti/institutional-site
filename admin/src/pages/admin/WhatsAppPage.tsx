@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Filter, Loader2, MoreVertical, Pencil, Plus, Search, Settings2, Tag, Trash2, X } from "lucide-react";
+import { Check, Filter, MoreVertical, Pencil, Plus, Search, Settings2, Tag, Trash2, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
+import LoadingState from "../../components/common/LoadingState";
+import AlertModal from "../../components/common/AlertModal";
 import type {
   SellersResponse,
   WhatsAppConversationPayloadResponse,
@@ -19,6 +21,16 @@ import WhatsAppStartConversationModal from "../../components/whatsapp/WhatsAppSt
 import { conversationDisplayName } from "../../components/whatsapp/utils";
 
 type FilterKey = "all" | "unread" | "mine" | "unassigned";
+type ConfirmIntent = "info" | "warning" | "danger";
+
+type ConfirmDialogState = {
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  intent?: ConfirmIntent;
+  onConfirm: () => Promise<void> | void;
+};
 
 type RealtimeUpdatesResponse = {
   data: {
@@ -152,6 +164,8 @@ export default function WhatsAppPage() {
   const [quickReplyForm, setQuickReplyForm] = useState({ title: "", content: "" });
   const [editingQuickReplyId, setEditingQuickReplyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const [newConversationOpen, setNewConversationOpen] = useState(false);
 
@@ -992,13 +1006,22 @@ export default function WhatsAppPage() {
     }
   }, [token, selectedConversation, renameDraft]);
 
-  const deleteConversation = useCallback(async () => {
-    if (!token || !selectedConversation) {
+  const confirmDialogAction = useCallback(async () => {
+    if (!confirmDialog) {
       return;
     }
 
-    const ok = window.confirm(`Deseja realmente excluir a conversa com ${conversationDisplayName(selectedConversation)}?`);
-    if (!ok) {
+    setConfirmLoading(true);
+    try {
+      await confirmDialog.onConfirm();
+      setConfirmDialog(null);
+    } finally {
+      setConfirmLoading(false);
+    }
+  }, [confirmDialog]);
+
+  const deleteConversation = useCallback(async () => {
+    if (!token || !selectedConversation) {
       return;
     }
     setActionsMenuOpen(false);
@@ -1033,6 +1056,23 @@ export default function WhatsAppPage() {
       setDeletingConversation(false);
     }
   }, [token, selectedConversation]);
+
+  const requestDeleteConversation = useCallback(() => {
+    if (!selectedConversation) {
+      return;
+    }
+
+    setConfirmDialog({
+      title: "Excluir conversa",
+      description: `Deseja realmente excluir a conversa com ${conversationDisplayName(selectedConversation)}?`,
+      confirmLabel: "Excluir conversa",
+      cancelLabel: "Cancelar",
+      intent: "danger",
+      onConfirm: async () => {
+        await deleteConversation();
+      },
+    });
+  }, [selectedConversation, deleteConversation]);
 
   const addTagToConversation = useCallback(async () => {
     if (!token || !selectedConversation) {
@@ -1191,6 +1231,19 @@ export default function WhatsAppPage() {
     }
   }, [token, loadQuickReplies]);
 
+  const requestDeleteQuickReply = useCallback((reply: WhatsAppQuickReplyRecord) => {
+    setConfirmDialog({
+      title: "Excluir mensagem rapida",
+      description: `A mensagem rapida "${reply.title}" sera removida permanentemente.`,
+      confirmLabel: "Excluir",
+      cancelLabel: "Cancelar",
+      intent: "danger",
+      onConfirm: async () => {
+        await deleteQuickReply(reply.id);
+      },
+    });
+  }, [deleteQuickReply]);
+
   const createTag = useCallback(async () => {
     if (!token) {
       return;
@@ -1236,6 +1289,19 @@ export default function WhatsAppPage() {
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel remover tag.");
     }
   }, [token, loadTags]);
+
+  const requestDeleteTag = useCallback((tag: WhatsAppTagRecord) => {
+    setConfirmDialog({
+      title: "Excluir tag",
+      description: `A tag "${tag.name}" sera removida e nao podera ser recuperada.`,
+      confirmLabel: "Excluir tag",
+      cancelLabel: "Cancelar",
+      intent: "danger",
+      onConfirm: async () => {
+        await deleteTag(tag.id);
+      },
+    });
+  }, [deleteTag]);
 
   const filterChips = useMemo(
     () => [
@@ -1319,10 +1385,7 @@ export default function WhatsAppPage() {
           </div>
 
           {loadingConversations && conversations.length === 0 ? (
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-              <Loader2 size={14} className="animate-spin" />
-              Carregando conversas...
-            </div>
+            <LoadingState label="Carregando conversas..." className="p-4" />
           ) : conversations.length === 0 ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
               Nenhuma conversa encontrada.
@@ -1493,7 +1556,7 @@ export default function WhatsAppPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            void deleteConversation();
+                            requestDeleteConversation();
                           }}
                           disabled={deletingConversation}
                           className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-red-700 hover:bg-red-50 disabled:opacity-60"
@@ -1531,6 +1594,14 @@ export default function WhatsAppPage() {
             onSendDocument={sendDocument}
             onSendAudio={sendAudio}
             quickReplies={quickReplies}
+            onOpenLeadCard={() => {
+              if (!selectedConversation?.lead_id) {
+                return;
+              }
+
+              const pipeline = selectedConversation.lead?.pipeline || "comercial";
+              navigate(`/admin/pipes?pipe=${pipeline}&lead=${selectedConversation.lead_id}`);
+            }}
           />
         </section>
       </section>
@@ -1616,7 +1687,7 @@ export default function WhatsAppPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          void deleteTag(tag.id);
+                          requestDeleteTag(tag);
                         }}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 text-red-700 hover:bg-red-50"
                       >
@@ -1701,7 +1772,7 @@ export default function WhatsAppPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              void deleteQuickReply(reply.id);
+                              requestDeleteQuickReply(reply);
                             }}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 text-red-700 hover:bg-red-50"
                             title="Excluir resposta rapida"
@@ -1718,6 +1789,24 @@ export default function WhatsAppPage() {
           </div>
         </div>
       )}
+
+      <AlertModal
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title ?? "Confirmar acao"}
+        description={confirmDialog?.description}
+        confirmLabel={confirmDialog?.confirmLabel}
+        cancelLabel={confirmDialog?.cancelLabel}
+        intent={confirmDialog?.intent}
+        loading={confirmLoading}
+        onConfirm={confirmDialogAction}
+        onClose={() => {
+          if (confirmLoading) {
+            return;
+          }
+
+          setConfirmDialog(null);
+        }}
+      />
     </PageShell>
   );
 }

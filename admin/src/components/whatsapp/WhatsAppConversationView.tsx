@@ -19,6 +19,7 @@ type Props = {
   onSendDocument: (payload: { base64: string; mime: string; filename?: string; caption?: string }) => Promise<void>;
   onSendAudio: (payload: { base64: string; mime: string; filename?: string }) => Promise<void>;
   quickReplies?: Array<{ id: number; title: string; content: string }>;
+  onOpenLeadCard?: () => void;
 };
 
 export default function WhatsAppConversationView({
@@ -35,11 +36,13 @@ export default function WhatsAppConversationView({
   onSendDocument,
   onSendAudio,
   quickReplies,
+  onOpenLeadCard,
 }: Props) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [avatarZoomOpen, setAvatarZoomOpen] = useState(false);
   const loadingOlderRef = useRef(false);
   const preserveScrollRef = useRef<{ top: number; height: number } | null>(null);
+  const keepPinnedToBottomRef = useRef(true);
 
   const title = useMemo(() => {
     if (!conversation) {
@@ -55,26 +58,19 @@ export default function WhatsAppConversationView({
       return;
     }
 
-    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
-    if (nearBottom) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [messages, conversation?.id]);
-
-  useEffect(() => {
-    const container = listRef.current;
-    if (!container) {
-      return;
-    }
-
     if (preserveScrollRef.current) {
       const previous = preserveScrollRef.current;
       preserveScrollRef.current = null;
       const diff = container.scrollHeight - previous.height;
       container.scrollTop = previous.top + diff;
+      keepPinnedToBottomRef.current = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
       return;
     }
-  }, [messages.length]);
+
+    if (keepPinnedToBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [messages.length, conversation?.id]);
 
   useEffect(() => {
     const container = listRef.current;
@@ -82,6 +78,7 @@ export default function WhatsAppConversationView({
       return;
     }
 
+    keepPinnedToBottomRef.current = true;
     container.scrollTop = container.scrollHeight;
   }, [conversation?.id]);
 
@@ -90,6 +87,8 @@ export default function WhatsAppConversationView({
     if (!container || !onLoadOlderMessages || !hasOlderMessages || loadingOlderRef.current || loadingOlder) {
       return;
     }
+
+    keepPinnedToBottomRef.current = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
 
     if (container.scrollTop > 64) {
       return;
@@ -132,7 +131,20 @@ export default function WhatsAppConversationView({
             )}
           </button>
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-900">{title}</h3>
+            <h3 className="truncate text-sm font-semibold text-slate-900">
+              {conversation?.lead_id && onOpenLeadCard ? (
+                <button
+                  type="button"
+                  onClick={onOpenLeadCard}
+                  className="truncate text-left hover:underline"
+                  title="Abrir card do contato"
+                >
+                  {title}
+                </button>
+              ) : (
+                title
+              )}
+            </h3>
             {conversation && <p className="truncate text-xs text-slate-500">{conversation.phone || conversation.remote_jid}</p>}
           </div>
         </div>

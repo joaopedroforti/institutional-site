@@ -21,11 +21,14 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 
 class WhatsAppConversationService
 {
+    private const SCORE_RULES_KEY = 'lead_score_rules';
+
     public function __construct(
         private readonly EvolutionApiService $evolution,
         private readonly PhoneNormalizer $phoneNormalizer,
@@ -1184,6 +1187,7 @@ class WhatsAppConversationService
 
     private function createLeadFromConversation(WhatsAppConversation $conversation, string $normalizedPhone): ContactRequest
     {
+        $scoreRules = $this->resolveScoreRules();
         $column = LeadKanbanColumn::findByPipelineAndSlug(LeadKanbanColumn::PIPE_COMERCIAL, 'contato')
             ?? LeadKanbanColumn::defaultColumn(LeadKanbanColumn::PIPE_COMERCIAL);
 
@@ -1199,8 +1203,8 @@ class WhatsAppConversationService
             'pipeline' => LeadKanbanColumn::PIPE_COMERCIAL,
             'lead_kanban_column_id' => $column->id,
             'lead_order' => $nextOrder,
-            'lead_score' => 80,
-            'score_band' => 'hot',
+            'lead_score' => (int) ($scoreRules['inbound_whatsapp_score'] ?? 80),
+            'score_band' => (string) ($scoreRules['inbound_whatsapp_band'] ?? 'hot'),
             'last_activity_at' => now(),
             'stage_entered_at' => now(),
             'source_url' => 'whatsapp:inbound',
@@ -1214,6 +1218,33 @@ class WhatsAppConversationService
         $this->leadDistribution->assignLead($lead);
 
         return $lead->fresh();
+    }
+
+    private function resolveScoreRules(): array
+    {
+        $defaults = [
+            'inbound_whatsapp_score' => 80,
+            'inbound_whatsapp_band' => 'hot',
+        ];
+
+        if (! Schema::hasTable('general_settings')) {
+            return $defaults;
+        }
+
+        $raw = DB::table('general_settings')
+            ->where('setting_key', self::SCORE_RULES_KEY)
+            ->value('setting_value');
+
+        if (! is_string($raw) || trim($raw) === '') {
+            return $defaults;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            return $defaults;
+        }
+
+        return array_replace($defaults, $decoded);
     }
 
     private function inferLeadName(WhatsAppConversation $conversation, string $normalizedPhone): string

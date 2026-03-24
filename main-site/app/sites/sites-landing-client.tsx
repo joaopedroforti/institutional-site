@@ -21,6 +21,7 @@ import {
   Phone,
   Mail,
   MessageCircle,
+  MapPin,
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { getStoredVisitorSessionKey, trackInteraction } from "../lib/analytics";
@@ -72,6 +73,7 @@ type GeneralSettings = {
   contact_phone: string;
   contact_whatsapp: string;
   contact_whatsapp_url: string;
+  contact_address: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -104,6 +106,7 @@ const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   contact_phone: "",
   contact_whatsapp: "",
   contact_whatsapp_url: "",
+  contact_address: "",
 };
 
 const NAV_LINKS = [
@@ -709,6 +712,13 @@ export default function SitesLandingPage() {
                     <Mail size={14} />
                     {generalSettings.contact_email}
                   </a>
+                )}
+
+                {generalSettings.contact_address && (
+                  <span className="lp-footer-cta__contact-item">
+                    <MapPin size={14} />
+                    {generalSettings.contact_address}
+                  </span>
                 )}
               </div>
             </div>

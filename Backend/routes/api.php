@@ -50,11 +50,15 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::get('/leads/{contactRequest}', [ContactRequestController::class, 'show']);
     Route::get('/sessions', [AdminDashboardController::class, 'sessions']);
     Route::get('/sellers', [SellerController::class, 'index']);
+    Route::get('/sellers/analytics', [SellerController::class, 'analytics']);
     Route::post('/sellers', [SellerController::class, 'store']);
     Route::patch('/sellers/distribution/settings', [SellerController::class, 'updateDistribution']);
     Route::patch('/sellers/onboarding/deadlines', [SellerController::class, 'updateOnboardingDeadlines']);
     Route::patch('/sellers/{user}', [SellerController::class, 'update']);
     Route::get('/budgets', [BudgetController::class, 'index']);
+    Route::patch('/budgets/{budget}', [BudgetController::class, 'updatePendingBudget']);
+    Route::post('/budgets/manual', [BudgetController::class, 'storeManual']);
+    Route::patch('/budgets/{budget}/generate', [BudgetController::class, 'generateFromRequest']);
     Route::patch('/budgets/{budget}/validate', [BudgetController::class, 'validateBudget']);
     Route::patch('/budgets/{budget}/discount', [BudgetController::class, 'applyDiscount']);
     Route::patch('/notifications/{adminNotification}/read', [BudgetController::class, 'markNotificationAsRead']);
@@ -64,6 +68,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::patch('/settings/general', [CommercialSettingsController::class, 'updateGeneralSettings']);
     Route::get('/settings/pricing', [CommercialSettingsController::class, 'pricingSettings']);
     Route::patch('/settings/pricing', [CommercialSettingsController::class, 'updatePricingSettings']);
+    Route::get('/settings/score-rules', [CommercialSettingsController::class, 'scoreRules']);
+    Route::patch('/settings/score-rules', [CommercialSettingsController::class, 'updateScoreRules']);
+    Route::get('/settings/source-mappings', [CommercialSettingsController::class, 'sourceMappings']);
+    Route::patch('/settings/source-mappings', [CommercialSettingsController::class, 'updateSourceMappings']);
     Route::get('/pipes', [KanbanController::class, 'pipes']);
     Route::get('/kanban', [KanbanController::class, 'board']);
     Route::post('/kanban/leads', [KanbanController::class, 'storeLead']);

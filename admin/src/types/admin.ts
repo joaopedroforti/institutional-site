@@ -13,7 +13,13 @@ export type DashboardSummary = {
 
 export type DashboardResponse = {
   summary: DashboardSummary;
+  filters?: {
+    from: string;
+    to: string;
+  };
   daily_sessions: Array<{ date: string; total: number }>;
+  daily_page_views?: Array<{ date: string; total: number }>;
+  daily_interactions?: Array<{ date: string; total: number }>;
   top_pages: Array<{ path: string; total: number }>;
   top_events: Array<{ event_type: string; total: number }>;
   leads_by_status: Array<{ status: string; total: number }>;
@@ -154,6 +160,73 @@ export type SellersResponse = {
   };
 };
 
+export type SellerAnalyticsItem = {
+  seller: {
+    id: number;
+    name: string;
+    username: string;
+    email: string;
+  };
+  metrics: {
+    leads_received: number;
+    leads_in_progress: number;
+    proposals_created: number;
+    proposals_sent: number;
+    proposals_approved: number;
+    proposals_reproved: number;
+    approved_count: number;
+    reproved_count: number;
+    sold_value: number;
+    avg_ticket: number;
+    conversion_rate: number;
+    avg_discount_percent: number;
+    discount_amount: number;
+    avg_response_minutes: number | null;
+    response_samples: number;
+    pipeline_counts?: {
+      comercial: number;
+      desenvolvimento: number;
+      followup: number;
+      cs: number;
+    };
+    proposal_status_counts?: {
+      draft: number;
+      pending_validation: number;
+      sent: number;
+      approved: number;
+      adjustment_requested: number;
+    };
+  };
+};
+
+export type SellerAnalyticsResponse = {
+  data: {
+    filters: {
+      seller_id: number | null;
+      from: string | null;
+      to: string | null;
+    };
+    totals: {
+      leads_received: number;
+      leads_in_progress: number;
+      proposals_created: number;
+      proposals_sent: number;
+      proposals_approved: number;
+      proposals_reproved: number;
+      approved_count: number;
+      reproved_count: number;
+      sold_value: number;
+      avg_ticket: number;
+      conversion_rate: number;
+      avg_discount_percent: number;
+      discount_amount: number;
+      response_samples: number;
+      avg_response_minutes: number | null;
+    };
+    items: SellerAnalyticsItem[];
+  };
+};
+
 export type BudgetRecord = {
   id: number;
   identifier: string;
@@ -163,6 +236,14 @@ export type BudgetRecord = {
   is_visible_to_seller?: boolean;
   project_type: string;
   title: string;
+  description?: string | null;
+  objective?: string | null;
+  visual_direction?: string | null;
+  onboarding_answers?: Record<string, unknown> | null;
+  selected_pages?: string[] | null;
+  base_amount?: string | number | null;
+  addons_amount?: string | number | null;
+  timeline_adjustment?: string | number | null;
   valid_until: string | null;
   internal_due_date: string | null;
   internal_deadline_days: number | null;
@@ -242,10 +323,54 @@ export type GeneralSettings = {
   contact_phone: string;
   contact_whatsapp: string;
   contact_whatsapp_url: string;
+  contact_address: string;
 };
 
 export type GeneralSettingsResponse = {
   data: GeneralSettings;
+};
+
+export type ScoreRulesSettings = {
+  utm_source_bonus: number;
+  page_view_weight: number;
+  page_view_cap: number;
+  contact_page_bonus: number;
+  proposal_access_weight: number;
+  proposal_access_cap: number;
+  returned_after_proposal_bonus: number;
+  form_submit_weight: number;
+  form_submit_cap: number;
+  whatsapp_click_weight: number;
+  whatsapp_click_cap: number;
+  cta_click_weight: number;
+  cta_click_cap: number;
+  whatsapp_form_weight: number;
+  whatsapp_form_cap: number;
+  onboarding_deadline_bonus_cap: number;
+  low_activity_penalty: number;
+  hot_min_score: number;
+  warm_min_score: number;
+  draft_max_score: number;
+  draft_score_band: string;
+  inbound_whatsapp_score: number;
+  inbound_whatsapp_band: string;
+};
+
+export type ScoreRulesResponse = {
+  data: ScoreRulesSettings;
+};
+
+export type SourceTagMappingRule = {
+  contains: string;
+  label: string;
+  priority: number;
+  is_active: boolean;
+};
+
+export type SourceMappingsResponse = {
+  data: {
+    rules: SourceTagMappingRule[];
+  };
 };
 
 export type WhatsAppContactRecord = {

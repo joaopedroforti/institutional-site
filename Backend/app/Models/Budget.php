@@ -19,6 +19,7 @@ class Budget extends Model
         'is_visible_to_seller',
         'project_type',
         'title',
+        'description',
         'valid_until',
         'internal_due_date',
         'internal_deadline_days',

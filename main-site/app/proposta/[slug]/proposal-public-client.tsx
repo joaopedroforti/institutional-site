@@ -21,7 +21,9 @@ type ProposalData = {
   id: number;
   slug: string;
   status: string;
+  project_type?: "site" | "sistema" | "automacao" | string;
   title: string;
+  description?: string | null;
   client_name: string;
   client_company: string | null;
   objective: string | null;
@@ -147,6 +149,7 @@ export default function ProposalPublicClient({ slug }: { slug: string }) {
   }, [slug]);
 
   const onboarding = (proposal?.onboarding_answers ?? {}) as Record<string, unknown>;
+  const projectType = String(proposal?.project_type ?? "site");
   const pages = useMemo(() => (Array.isArray(proposal?.selected_pages) ? proposal?.selected_pages : []), [proposal?.selected_pages]);
   const objective = capitalizeFirst(proposal?.objective || textValue(onboarding.siteObjective));
   const visual = capitalizeFirst(proposal?.visual_direction || textValue(onboarding.siteVisual));
@@ -167,31 +170,49 @@ export default function ProposalPublicClient({ slug }: { slug: string }) {
     : "-";
   const whatsappRaw = textValue(onboarding.contactWhatsapp, "").replace(/\D/g, "");
   const whatsappHref = whatsappRaw ? `https://wa.me/55${whatsappRaw}` : null;
-  const timeline = [
-    {
-      title: "Alinhamento",
-      description: "Alinhamento estrategico, organizacao do briefing e definicao da arquitetura.",
-    },
-    {
-      title: "Planejamento",
-      description: "Direcao visual, wireframe dos blocos principais e ajustes de conteudo.",
-    },
-    {
-      title: "Desenvolvimento",
-      description: "Implementacao das paginas, responsividade e integracoes principais.",
-    },
-    {
-      title: "Publicacao",
-      description: "Rodada final de revisao, checklist de qualidade e colocacao no ar.",
-    },
-  ];
-  const deliverables = [
-    "Arquitetura focada em posicionamento e credibilidade da marca.",
-    "Design responsivo com blocos institucionais e CTAs estrategicos.",
-    "Configuracao de formulario principal para novos contatos.",
-    `Paginas previstas nesta proposta: ${pages.map((item) => capitalizeFirst(item)).join(", ") || "Home, Sobre, Servicos, Contato"}.`,
-    "Orientacao comercial para organizacao de textos e materiais criticos do projeto.",
-  ];
+  const timeline = projectType === "sistema"
+    ? [
+        { title: "Descoberta", description: "Mapeamento de requisitos, regras de negocio e acessos." },
+        { title: "Arquitetura", description: "Definicao tecnica de modulos, dados e integracoes." },
+        { title: "Implementacao", description: "Desenvolvimento iterativo com validacoes por etapa." },
+        { title: "Homologacao", description: "Testes assistidos, ajustes e plano de entrada em producao." },
+      ]
+    : projectType === "automacao"
+      ? [
+          { title: "Mapeamento", description: "Levantamento dos fluxos e pontos de gargalo atuais." },
+          { title: "Desenho", description: "Desenho das automacoes, gatilhos e regras de excecao." },
+          { title: "Implantacao", description: "Configuracao dos conectores e regras automatizadas." },
+          { title: "Acompanhamento", description: "Ajustes finos e monitoramento de desempenho." },
+        ]
+      : [
+          { title: "Alinhamento", description: "Alinhamento estrategico, organizacao do briefing e definicao da arquitetura." },
+          { title: "Planejamento", description: "Direcao visual, wireframe dos blocos principais e ajustes de conteudo." },
+          { title: "Desenvolvimento", description: "Implementacao das paginas, responsividade e integracoes principais." },
+          { title: "Publicacao", description: "Rodada final de revisao, checklist de qualidade e colocacao no ar." },
+        ];
+  const deliverables = projectType === "sistema"
+    ? [
+        "Levantamento funcional com visao executiva e tecnica.",
+        "Construcao de modulos conforme escopo validado.",
+        "Integracoes com APIs e sistemas de apoio do processo.",
+        "Painel de controle e trilha de auditoria operacional.",
+        "Documentacao de uso e handoff para operacao.",
+      ]
+    : projectType === "automacao"
+      ? [
+          "Mapeamento de processo atual e desenho de fluxo alvo.",
+          "Automacoes em etapas com regras e validacoes.",
+          "Integracao com WhatsApp, webhooks ou sistema legado.",
+          "Alertas, acompanhamento e logs de execucao.",
+          "Treinamento rapido do time para operacao.",
+        ]
+      : [
+          "Arquitetura focada em posicionamento e credibilidade da marca.",
+          "Design responsivo com blocos institucionais e CTAs estrategicos.",
+          "Configuracao de formulario principal para novos contatos.",
+          `Paginas previstas nesta proposta: ${pages.map((item) => capitalizeFirst(item)).join(", ") || "Home, Sobre, Servicos, Contato"}.`,
+          "Orientacao comercial para organizacao de textos e materiais criticos do projeto.",
+        ];
 
   const approveProposal = async () => {
     if (!proposal) {
@@ -352,6 +373,7 @@ export default function ProposalPublicClient({ slug }: { slug: string }) {
               <p className={styles.legend}>
                 Proposta preparada para {projectName}, com escopo, investimento e condicoes comerciais definidos para viabilizar o inicio do projeto.
               </p>
+              {proposal.description && <p className={styles.legend}>{proposal.description}</p>}
 
               <div className={styles.gridCards}>
                 <div className={styles.infoCard}>

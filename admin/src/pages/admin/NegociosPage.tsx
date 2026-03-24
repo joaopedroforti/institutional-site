@@ -3,6 +3,7 @@ import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
 import type { KanbanColumn, KanbanLead, KanbanResponse } from "../../types/admin";
+import LoadingState from "../../components/common/LoadingState";
 
 export default function NegociosPage() {
   const { token } = useAuth();
@@ -89,11 +90,7 @@ export default function NegociosPage() {
         </button>
       }
     >
-      {loading && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-          Carregando Kanban...
-        </div>
-      )}
+      {loading && <LoadingState label="Carregando Kanban..." />}
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">{error}</div>

@@ -9,6 +9,7 @@ use App\Models\PricingProjectSetting;
 use App\Models\PricingRuleItem;
 use App\Models\ProposalTemplate;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class BudgetService
 {
@@ -23,23 +24,14 @@ class BudgetService
     ): Budget {
         $projectType = (string) ($onboarding['project_type'] ?? 'site');
         $answers = is_array($onboarding['answers'] ?? null) ? $onboarding['answers'] : [];
+        $isRequestOnly = $projectType !== 'site';
 
         $pricingSetting = PricingProjectSetting::query()
             ->where('project_type', $projectType)
             ->first();
 
-        $ruleMap = PricingRuleItem::query()
-            ->where('project_type', $projectType)
-            ->where('is_active', true)
-            ->get()
-            ->mapWithKeys(fn (PricingRuleItem $item) => [$item->rule_key => (float) $item->amount])
-            ->all();
-
-        $pricing = match ($projectType) {
-            'sistema' => $this->buildSystemPricing($answers, $ruleMap),
-            'automacao' => $this->buildAutomationPricing($answers, $ruleMap),
-            default => $this->buildSitePricing($answers, $ruleMap),
-        };
+        $ruleMap = $this->loadPricingRules($projectType);
+        $pricing = $this->calculatePricing($projectType, $answers, $ruleMap);
 
         $needsValidation = (bool) ($pricingSetting?->requires_admin_validation ?? ($projectType !== 'site'));
         if ($projectType === 'sistema') {
@@ -50,12 +42,10 @@ class BudgetService
             }
         }
 
-        $isVisibleToSeller = ! $needsValidation;
-        $status = $needsValidation ? 'pending_validation' : 'sent';
+        $isVisibleToSeller = $isRequestOnly ? false : ! $needsValidation;
+        $status = $isRequestOnly ? 'request' : ($needsValidation ? 'pending_validation' : 'sent');
 
-        $template = ProposalTemplate::query()
-            ->where('template_key', 'modelo-site-v1')
-            ->first();
+        $template = $this->resolveTemplateForProject($projectType);
 
         $companyOrName = trim((string) ($contact->company ?: $contact->name));
         $dateSuffix = now()->format('d-m-Y');
@@ -80,7 +70,9 @@ class BudgetService
             'status' => $status,
             'requires_admin_validation' => $needsValidation,
             'is_visible_to_seller' => $isVisibleToSeller,
-            'title' => 'Proposta comercial '.($contact->company ?: $contact->name),
+            'title' => $isRequestOnly
+                ? 'Solicitacao de proposta '.($contact->company ?: $contact->name)
+                : 'Proposta comercial '.($contact->company ?: $contact->name),
             'valid_until' => now()->addDays(15)->toDateString(),
             'internal_due_date' => $internalDueDate,
             'internal_deadline_days' => $internalDays,
@@ -93,20 +85,27 @@ class BudgetService
             'visual_direction' => $pricing['visual_direction'],
             'onboarding_answers' => $answers,
             'selected_pages' => $pricing['selected_pages'],
-            'base_amount' => $pricing['base_amount'],
-            'addons_amount' => $pricing['addons_amount'],
-            'timeline_adjustment' => $pricing['timeline_adjustment'],
-            'total_amount' => $pricing['total_amount'],
-            'entry_amount' => $pricing['entry_amount'],
+            'base_amount' => $isRequestOnly ? 0 : $pricing['base_amount'],
+            'addons_amount' => $isRequestOnly ? 0 : $pricing['addons_amount'],
+            'timeline_adjustment' => $isRequestOnly ? 0 : $pricing['timeline_adjustment'],
+            'total_amount' => $isRequestOnly ? 0 : $pricing['total_amount'],
+            'entry_amount' => $isRequestOnly ? 0 : $pricing['entry_amount'],
             'discount_percent' => 0,
             'discount_amount' => 0,
             'published_at' => $isVisibleToSeller ? now() : null,
             'metadata' => [
                 'auto_generated' => true,
                 'source' => 'onboarding_submit',
+                ...($isRequestOnly ? ['proposal_request_only' => true] : []),
                 ...($needsValidation ? ['validation' => 'pending_admin'] : []),
             ],
         ];
+
+        if (Schema::hasColumn('budgets', 'description')) {
+            $budgetData['description'] = $isRequestOnly
+                ? trim((string) ($answers['systemFeatures'] ?? $answers['automationDescription'] ?? 'Solicitacao recebida via onboarding.'))
+                : null;
+        }
 
         if ($existingBudget) {
             $existingBudget->update($budgetData);
@@ -129,13 +128,56 @@ class BudgetService
         }
 
         $contact->forceFill([
-            'deal_value' => $pricing['total_amount'],
+            'deal_value' => $isRequestOnly ? 0 : $pricing['total_amount'],
             'metadata' => $contactMetadata,
         ])->save();
 
         $this->storeVersionSnapshot($budget, null);
 
         return $budget;
+    }
+
+    /**
+     * @param  array<string, mixed>  $answers
+     * @param  array<string, float>|null  $ruleMap
+     * @return array<string, mixed>
+     */
+    public function calculatePricing(string $projectType, array $answers, ?array $ruleMap = null): array
+    {
+      $resolvedRuleMap = $ruleMap ?? $this->loadPricingRules($projectType);
+
+      return match ($projectType) {
+          'sistema' => $this->buildSystemPricing($answers, $resolvedRuleMap),
+          'automacao' => $this->buildAutomationPricing($answers, $resolvedRuleMap),
+          default => $this->buildSitePricing($answers, $resolvedRuleMap),
+      };
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function loadPricingRules(string $projectType): array
+    {
+        return PricingRuleItem::query()
+            ->where('project_type', $projectType)
+            ->where('is_active', true)
+            ->get()
+            ->mapWithKeys(fn (PricingRuleItem $item) => [$item->rule_key => (float) $item->amount])
+            ->all();
+    }
+
+    public function resolveTemplateForProject(string $projectType): ?ProposalTemplate
+    {
+        $templateKey = match ($projectType) {
+            'sistema' => 'modelo-sistema-v1',
+            'automacao' => 'modelo-automacao-v1',
+            default => 'modelo-site-v1',
+        };
+
+        return ProposalTemplate::query()
+            ->where('template_key', $templateKey)
+            ->first()
+            ?? ProposalTemplate::query()->where('template_key', 'modelo-site-v1')->first();
     }
 
     /**
