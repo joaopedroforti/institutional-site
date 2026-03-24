@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { ChevronDown, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { SIDEBAR_ITEMS } from "../config/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
+import { apiRequest } from "../lib/api";
+import type { WhatsAppOverviewResponse } from "../types/admin";
 
 const EXPANDED_WIDTH = "w-64";
 const COLLAPSED_WIDTH = "w-20";
@@ -24,12 +26,13 @@ export default function AppSidebar() {
     closeMobileSidebar,
     setIsHovered,
   } = useSidebar();
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const location = useLocation();
 
   const [settingsOpen, setSettingsOpen] = useState(() =>
     location.pathname.startsWith("/admin/configuracoes"),
   );
+  const [whatsAppUnreadCount, setWhatsAppUnreadCount] = useState(0);
   const sidebarWidth = isExpanded || isHovered ? EXPANDED_WIDTH_PX : COLLAPSED_WIDTH_PX;
 
   const classes = useMemo(
@@ -39,6 +42,36 @@ export default function AppSidebar() {
       }`,
     [isExpanded, isHovered],
   );
+
+  useEffect(() => {
+    if (!token) {
+      setWhatsAppUnreadCount(0);
+      return;
+    }
+
+    let active = true;
+
+    const loadUnread = async () => {
+      try {
+        const response = await apiRequest<WhatsAppOverviewResponse>("/api/admin/whatsapp/overview", {}, token);
+        if (active) {
+          setWhatsAppUnreadCount(response.data.totals.unread_conversations ?? 0);
+        }
+      } catch {
+        // silencioso
+      }
+    };
+
+    void loadUnread();
+    const timer = window.setInterval(() => {
+      void loadUnread();
+    }, 10000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [token]);
 
   return (
     <aside
@@ -179,7 +212,7 @@ export default function AppSidebar() {
                     isActive
                       ? "border-white/30 bg-white/[0.22] text-white"
                       : "border-transparent text-blue-100 hover:border-white/20 hover:bg-white/[0.14] hover:text-white"
-                  } ${isExpanded || isHovered ? "gap-3.5" : "justify-center"}`
+                  } ${isExpanded || isHovered ? "gap-3.5" : "justify-center"} relative`
                 }
                 title={item.label}
               >
@@ -193,6 +226,19 @@ export default function AppSidebar() {
                       <Icon size={18} />
                     </span>
                     {(isExpanded || isHovered) && <span>{item.label}</span>}
+                    {item.path === "/admin/whatsapp" && whatsAppUnreadCount > 0 && (
+                      <span
+                        className={`relative ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-950 shadow-[0_0_0_2px_rgba(16,185,129,0.35)] ${
+                          isExpanded || isHovered ? "" : "absolute -right-1 -top-1"
+                        }`}
+                      >
+                        <span
+                          className="pointer-events-none absolute inset-0 rounded-full bg-emerald-400/60 animate-ping"
+                          aria-hidden="true"
+                        />
+                        <span className="relative z-10">{whatsAppUnreadCount > 99 ? "99+" : whatsAppUnreadCount}</span>
+                      </span>
+                    )}
                   </>
                 )}
               </NavLink>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ContactRequest;
+use App\Models\CrmTag;
 use App\Models\LeadHistory;
 use App\Models\LeadKanbanColumn;
 use App\Models\VisitorSession;
@@ -12,6 +13,7 @@ use App\Services\LeadDistributionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ContactRequestController extends Controller
@@ -193,7 +195,7 @@ class ContactRequestController extends Controller
     public function index(Request $request, LeadAnalyticsService $leadAnalytics): JsonResponse
     {
         $contacts = ContactRequest::query()
-            ->with(['visitorSession', 'kanbanColumn', 'assignedUser', 'responsibleCloserUser'])
+            ->with(['visitorSession', 'kanbanColumn', 'assignedUser', 'responsibleCloserUser', 'tags'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -213,7 +215,7 @@ class ContactRequestController extends Controller
 
     public function show(ContactRequest $contactRequest, LeadAnalyticsService $leadAnalytics): JsonResponse
     {
-        $contact = $contactRequest->load(['visitorSession', 'kanbanColumn', 'assignedUser', 'responsibleCloserUser']);
+        $contact = $contactRequest->load(['visitorSession', 'kanbanColumn', 'assignedUser', 'responsibleCloserUser', 'tags']);
         $tracking = $leadAnalytics->buildLeadTracking($contactRequest);
         $metrics = $leadAnalytics->buildLeadMetrics($contactRequest);
 
@@ -340,6 +342,59 @@ class ContactRequestController extends Controller
         return response()->json([
             'message' => 'Anotacao registrada com sucesso.',
         ], 201);
+    }
+
+    public function addTag(Request $request, ContactRequest $contactRequest): JsonResponse
+    {
+        $payload = $request->validate([
+            'tag_id' => ['nullable', 'integer', 'exists:crm_tags,id'],
+            'name' => ['nullable', 'string', 'max:120'],
+            'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+        ]);
+
+        $tag = null;
+        if (! empty($payload['tag_id'])) {
+            $tag = CrmTag::query()->findOrFail((int) $payload['tag_id']);
+        } else {
+            $name = trim((string) ($payload['name'] ?? ''));
+            if ($name === '') {
+                throw ValidationException::withMessages([
+                    'tag' => ['Informe uma tag existente ou nome para nova tag.'],
+                ]);
+            }
+
+            $slugBase = Str::slug($name) ?: 'tag';
+            $slug = $slugBase;
+            $counter = 1;
+            while (CrmTag::query()->where('slug', $slug)->exists()) {
+                $counter++;
+                $slug = "{$slugBase}-{$counter}";
+            }
+
+            $tag = CrmTag::query()->create([
+                'name' => $name,
+                'slug' => $slug,
+                'color' => $payload['color'] ?? '#2563eb',
+                'is_active' => true,
+            ]);
+        }
+
+        $contactRequest->tags()->syncWithoutDetaching([$tag->id]);
+
+        return response()->json([
+            'message' => 'Tag adicionada ao lead.',
+            'data' => $contactRequest->fresh(['tags']),
+        ]);
+    }
+
+    public function removeTag(ContactRequest $contactRequest, CrmTag $tag): JsonResponse
+    {
+        $contactRequest->tags()->detach($tag->id);
+
+        return response()->json([
+            'message' => 'Tag removida do lead.',
+            'data' => $contactRequest->fresh(['tags']),
+        ]);
     }
 
     private function findExistingLeadForCapture(?string $email, ?string $phone, ?int $sessionId): ?ContactRequest

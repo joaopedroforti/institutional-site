@@ -12,6 +12,8 @@ import AnaliticoPage from "./pages/admin/AnaliticoPage";
 import VendedoresPage from "./pages/admin/VendedoresPage";
 import PrecificacaoPage from "./pages/admin/PrecificacaoPage";
 import ConfiguracoesPage from "./pages/admin/ConfiguracoesPage";
+import WhatsAppPage from "./pages/admin/WhatsAppPage";
+import WhatsAppSettingsPage from "./pages/admin/WhatsAppSettingsPage";
 
 function NotFoundPage() {
   return (
@@ -43,12 +45,14 @@ export default function App() {
             <Route path="/admin/negocios" element={<Navigate to="/admin/pipes" replace />} />
             <Route path="/admin/orcamentos" element={<OrcamentosPage />} />
             <Route path="/admin/propostas" element={<Navigate to="/admin/configuracoes/propostas" replace />} />
+            <Route path="/admin/whatsapp" element={<WhatsAppPage />} />
             <Route path="/admin/analitico" element={<AnaliticoPage />} />
             <Route path="/admin/configuracoes" element={<Navigate to="/admin/configuracoes/vendedores" replace />} />
             <Route path="/admin/configuracoes/vendedores" element={<VendedoresPage />} />
             <Route path="/admin/configuracoes/propostas" element={<PropostasPage />} />
             <Route path="/admin/configuracoes/gerais" element={<ConfiguracoesPage />} />
             <Route path="/admin/configuracoes/precificacao" element={<PrecificacaoPage />} />
+            <Route path="/admin/configuracoes/whatsapp" element={<WhatsAppSettingsPage />} />
           </Route>
         </Route>
 

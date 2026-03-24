@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\PublicProposalController;
 use App\Http\Controllers\Api\SellerController;
+use App\Http\Controllers\Api\WhatsApp\WhatsAppController;
+use App\Http\Controllers\Api\WhatsApp\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
@@ -28,6 +30,7 @@ Route::get('/proposals/{slug}', [PublicProposalController::class, 'show']);
 Route::post('/proposals/{slug}/approve', [PublicProposalController::class, 'approve']);
 Route::post('/proposals/{slug}/request-adjustment', [PublicProposalController::class, 'requestAdjustment']);
 Route::get('/settings/general', [CommercialSettingsController::class, 'publicGeneralSettings']);
+Route::post('/whatsapp/webhook', WhatsAppWebhookController::class);
 
 Route::prefix('analytics')->group(function (): void {
     Route::post('/session', [AnalyticsController::class, 'syncSession']);
@@ -41,6 +44,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::get('/contacts/{contactRequest}', [ContactRequestController::class, 'show']);
     Route::patch('/contacts/{contactRequest}', [ContactRequestController::class, 'update']);
     Route::post('/contacts/{contactRequest}/notes', [ContactRequestController::class, 'addInternalNote']);
+    Route::post('/contacts/{contactRequest}/tags', [ContactRequestController::class, 'addTag']);
+    Route::delete('/contacts/{contactRequest}/tags/{tag}', [ContactRequestController::class, 'removeTag']);
     Route::get('/leads', [ContactRequestController::class, 'index']);
     Route::get('/leads/{contactRequest}', [ContactRequestController::class, 'show']);
     Route::get('/sessions', [AdminDashboardController::class, 'sessions']);
@@ -70,4 +75,39 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::post('/kanban/contacts/{contactRequest}/transition', [KanbanController::class, 'transition']);
     Route::get('/kanban/lost-reasons', [KanbanController::class, 'lostReasons']);
     Route::post('/kanban/lost-reasons', [KanbanController::class, 'storeLostReason']);
+
+    Route::prefix('whatsapp')->group(function (): void {
+        Route::get('/overview', [WhatsAppController::class, 'overview']);
+        Route::get('/conversations', [WhatsAppController::class, 'conversations']);
+        Route::post('/conversations/start', [WhatsAppController::class, 'startConversation']);
+        Route::get('/conversations/{conversation}', [WhatsAppController::class, 'showConversation']);
+        Route::patch('/conversations/{conversation}', [WhatsAppController::class, 'updateConversation']);
+        Route::delete('/conversations/{conversation}', [WhatsAppController::class, 'destroyConversation']);
+        Route::post('/conversations/{conversation}/tags', [WhatsAppController::class, 'addConversationTag']);
+        Route::delete('/conversations/{conversation}/tags/{tag}', [WhatsAppController::class, 'removeConversationTag']);
+        Route::get('/conversations/{conversation}/messages', [WhatsAppController::class, 'conversationMessages']);
+        Route::post('/conversations/{conversation}/messages/text', [WhatsAppController::class, 'sendText']);
+        Route::post('/conversations/{conversation}/messages/image', [WhatsAppController::class, 'sendImage']);
+        Route::post('/conversations/{conversation}/messages/audio', [WhatsAppController::class, 'sendAudio']);
+        Route::post('/conversations/{conversation}/messages/document', [WhatsAppController::class, 'sendDocument']);
+        Route::patch('/conversations/{conversation}/assign', [WhatsAppController::class, 'assignConversation']);
+        Route::get('/tags', [WhatsAppController::class, 'tags']);
+        Route::post('/tags', [WhatsAppController::class, 'storeTag']);
+        Route::patch('/tags/{tag}', [WhatsAppController::class, 'updateTag']);
+        Route::delete('/tags/{tag}', [WhatsAppController::class, 'destroyTag']);
+        Route::get('/quick-replies', [WhatsAppController::class, 'quickReplies']);
+        Route::post('/quick-replies', [WhatsAppController::class, 'storeQuickReply']);
+        Route::patch('/quick-replies/{quickReply}', [WhatsAppController::class, 'updateQuickReply']);
+        Route::delete('/quick-replies/{quickReply}', [WhatsAppController::class, 'destroyQuickReply']);
+        Route::get('/leads/{contactRequest}/conversation', [WhatsAppController::class, 'leadConversation']);
+        Route::get('/deals/{contactRequest}/conversation', [WhatsAppController::class, 'dealConversation']);
+        Route::get('/settings', [WhatsAppController::class, 'settings']);
+        Route::put('/settings', [WhatsAppController::class, 'updateSettings']);
+        Route::get('/instance/profile', [WhatsAppController::class, 'instanceProfile']);
+        Route::put('/instance/profile', [WhatsAppController::class, 'updateInstanceProfile']);
+        Route::get('/messages/{message}/media', [WhatsAppController::class, 'media']);
+        Route::post('/sync', [WhatsAppController::class, 'sync']);
+        Route::post('/webhook/register', [WhatsAppController::class, 'registerWebhook']);
+        Route::get('/realtime/updates', [WhatsAppController::class, 'realtimeUpdates']);
+    });
 });

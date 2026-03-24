@@ -61,4 +61,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(SellerProfile::class);
     }
+
+    public function whatsappAssignedConversations(): HasMany
+    {
+        return $this->hasMany(WhatsAppConversation::class, 'assigned_user_id');
+    }
 }

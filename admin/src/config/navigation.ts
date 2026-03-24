@@ -4,6 +4,7 @@ import {
   GitBranch,
   ClipboardList,
   Gauge,
+  MessageCircleMore,
   Users,
   UserCog,
   SlidersHorizontal,
@@ -41,6 +42,11 @@ export const SIDEBAR_ITEMS: SidebarGroup[] = [
     icon: ClipboardList,
   },
   {
+    label: "WhatsApp",
+    path: "/admin/whatsapp",
+    icon: MessageCircleMore,
+  },
+  {
     label: "Analitico",
     path: "/admin/analitico",
     icon: BarChart3,
@@ -68,6 +74,11 @@ export const SIDEBAR_ITEMS: SidebarGroup[] = [
         label: "Precificacao",
         path: "/admin/configuracoes/precificacao",
         icon: SlidersHorizontal,
+      },
+      {
+        label: "WhatsApp",
+        path: "/admin/configuracoes/whatsapp",
+        icon: MessageCircleMore,
       },
     ],
   },

@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") ?? "";
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 30000);
 
 export type ApiErrorPayload = {
   message: string;
@@ -56,10 +57,28 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      signal: init.signal ?? controller.signal,
+    });
+  } catch (error) {
+    window.clearTimeout(timeoutId);
+    const aborted = error instanceof DOMException && error.name === "AbortError";
+    throw new ApiError({
+      message: aborted
+        ? `Tempo limite excedido (${Math.round(API_TIMEOUT_MS / 1000)}s). Verifique backend e CORS.`
+        : "Falha de conexao com o backend.",
+      status: 0,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 
   const data = await parseJson(response);
 

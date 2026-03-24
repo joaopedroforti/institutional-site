@@ -39,6 +39,7 @@ export type KanbanLead = {
   created_at?: string;
   updated_at?: string;
   metadata?: Record<string, unknown> | null;
+  tags?: Array<{ id: number; name: string; slug: string; color?: string | null }>;
 };
 
 export type KanbanColumn = {
@@ -245,4 +246,172 @@ export type GeneralSettings = {
 
 export type GeneralSettingsResponse = {
   data: GeneralSettings;
+};
+
+export type WhatsAppContactRecord = {
+  id: number;
+  display_name: string | null;
+  push_name: string | null;
+  phone: string | null;
+  profile_picture_url: string | null;
+};
+
+export type WhatsAppConversationRecord = {
+  id: number;
+  whatsapp_instance_id: number;
+  whatsapp_contact_id: number | null;
+  remote_jid: string;
+  phone: string | null;
+  subject: string | null;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+  unread_count: number;
+  assigned_user_id: number | null;
+  lead_id: number | null;
+  deal_id: number | null;
+  status: string | null;
+  assigned_user?: { id: number; name: string } | null;
+  lead?: { id: number; name: string; phone?: string | null; pipeline?: string | null; status?: string | null } | null;
+  contact?: WhatsAppContactRecord | null;
+  tags?: Array<{ id: number; name: string; slug: string; color?: string | null }>;
+};
+
+export type WhatsAppTagRecord = {
+  id: number;
+  name: string;
+  slug: string;
+  color?: string | null;
+};
+
+export type WhatsAppQuickReplyRecord = {
+  id: number;
+  title: string;
+  content: string;
+  is_active: boolean;
+  created_by?: number | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type WhatsAppMessageRecord = {
+  id: number;
+  whatsapp_instance_id: number;
+  whatsapp_conversation_id: number;
+  whatsapp_contact_id: number | null;
+  external_message_id: string | null;
+  remote_jid: string;
+  direction: "inbound" | "outbound";
+  message_type: "text" | "image" | "audio" | "document" | "video" | "sticker" | "unknown";
+  body: string | null;
+  media_url: string | null;
+  media_mime: string | null;
+  media_filename: string | null;
+  media_size: number | null;
+  audio_duration: number | null;
+  from_me: boolean;
+  sender_name: string | null;
+  sender_phone: string | null;
+  sent_at: string | null;
+  status: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WhatsAppOverviewResponse = {
+  data: {
+    instance: {
+      id: number;
+      instance_name: string;
+      status: string;
+      sign_messages: boolean;
+      profile_name: string | null;
+      profile_status: string | null;
+      profile_picture_url: string | null;
+      phone: string | null;
+      last_synced_at: string | null;
+    };
+    totals: {
+      conversations: number;
+      unread_conversations: number;
+      messages_today: number;
+    };
+  };
+};
+
+export type WhatsAppConversationsResponse = {
+  data: WhatsAppConversationRecord[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+};
+
+export type WhatsAppMessagesResponse = {
+  data: WhatsAppMessageRecord[];
+  meta?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+};
+
+export type WhatsAppConversationPayloadResponse = {
+  data: WhatsAppConversationRecord;
+  messages: WhatsAppMessageRecord[];
+};
+
+export type WhatsAppSettingsResponse = {
+  data: {
+    instance: {
+      id: number;
+      instance_name: string;
+      status: string;
+      profile_name: string | null;
+      profile_status: string | null;
+      profile_picture_url: string | null;
+      phone: string | null;
+      last_connection_state: string | null;
+      last_synced_at: string | null;
+      sign_messages: boolean;
+      settings?: {
+        id: number;
+        sign_messages: boolean;
+        config_json?: Record<string, unknown> | null;
+      } | null;
+    };
+    settings: {
+      id: number;
+      sign_messages: boolean;
+      config_json?: Record<string, unknown> | null;
+    };
+    evolution: {
+      instance: string;
+      base_url: string;
+      realtime_mode: string;
+      polling_interval: number;
+      webhook_url: string | null;
+    };
+  };
+};
+
+export type WhatsAppProfileResponse = {
+  data: {
+    instance: {
+      id: number;
+      instance_name: string;
+      status: string;
+      profile_name: string | null;
+      profile_status: string | null;
+      profile_picture_url: string | null;
+      phone: string | null;
+      last_connection_state: string | null;
+      last_synced_at: string | null;
+    };
+    remote_status?: Record<string, unknown>;
+    remote_profile?: Record<string, unknown>;
+    remote_response?: Record<string, unknown>;
+  };
 };

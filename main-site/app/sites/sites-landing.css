@@ -16,20 +16,18 @@
         }
 
         /* ── Base reset ──────────────────────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body { margin: 0; font-family: 'Geist','Inter',system-ui,sans-serif; background: var(--white); color: var(--slate-900); overflow-x: hidden; }
+        .lp-root, .lp-root *, .lp-root *::before, .lp-root *::after { box-sizing: border-box; }
 
         /* ── Root ────────────────────────────────────────────────────── */
-        .lp-root { min-height: 100vh; display: flex; flex-direction: column; }
+        .lp-root { min-height: 100vh; display: flex; flex-direction: column; font-family: 'Geist','Inter',system-ui,sans-serif; background: var(--white); color: var(--slate-900); overflow-x: hidden; }
 
         /* ── Container ───────────────────────────────────────────────── */
         .lp-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 40px; }
         @media (max-width: 768px) { .lp-container { padding: 0 20px; } }
 
         /* ── Reveal ──────────────────────────────────────────────────── */
-        [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 540ms ease, transform 540ms ease; }
-        [data-reveal].is-visible { opacity: 1; transform: translateY(0); }
+        .lp-root [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity 540ms ease, transform 540ms ease; }
+        .lp-root [data-reveal].is-visible { opacity: 1; transform: translateY(0); }
 
         /* ── Typography ──────────────────────────────────────────────── */
         .lp-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--blue-600); margin-bottom: 10px; display: block; }

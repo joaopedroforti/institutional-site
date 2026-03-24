@@ -97,12 +97,16 @@ function readStoredAuth(): { token: string | null; user: AuthUser | null } {
 }
 
 function persistAuth(token: string | null, user: AuthUser | null): void {
-  if (!token || !user) {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-    return;
-  }
+  try {
+    if (!token || !user) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
 
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ token, user }));
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ token, user }));
+  } catch {
+    // Ignora falhas de storage (modo privado, quota, bloqueios de politica).
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -117,34 +121,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const bootTimeoutMs = 8000;
+    const timeoutId = window.setTimeout(() => {
+      if (!active) {
+        return;
+      }
+      setLoading(false);
+    }, bootTimeoutMs);
+
     const bootstrap = async () => {
       const stored = readStoredAuth();
+      const hasLocalSession = Boolean(stored.token && stored.user);
 
       if (!stored.token) {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
         return;
       }
 
-      setToken(stored.token);
+      if (active) {
+        setToken(stored.token);
+      }
       if (stored.user) {
-        setUser(stored.user);
+        if (active) {
+          setUser(stored.user);
+          // Evita travar a UI quando ja existe sessao local.
+          setLoading(false);
+        }
       }
 
       try {
-        const response = await apiRequest<MeResponse>("/api/auth/me", {}, stored.token);
+        const response = await Promise.race([
+          apiRequest<MeResponse>("/api/auth/me", {}, stored.token),
+          new Promise<never>((_, reject) =>
+            window.setTimeout(() => reject(new Error("AUTH_BOOT_TIMEOUT")), bootTimeoutMs),
+          ),
+        ]);
         const mappedUser = mapMeUser(response.user);
-        setUser(mappedUser);
+        if (active) {
+          setUser(mappedUser);
+        }
         persistAuth(stored.token, mappedUser);
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           clearAuth();
+        } else if (error instanceof Error && error.message === "AUTH_BOOT_TIMEOUT") {
+          // Mantem dados locais se existirem, apenas evita travar o loading.
+          if (!hasLocalSession && active) {
+            setLoading(false);
+          }
+        } else {
+          // Em qualquer outra falha de bootstrap, evita estado preso.
+          clearAuth();
         }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
+        window.clearTimeout(timeoutId);
       }
     };
 
     void bootstrap();
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
   }, [clearAuth]);
 
   const login = useCallback(async (payload: LoginPayload) => {

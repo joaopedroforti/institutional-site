@@ -372,9 +372,9 @@ export default function Home() {
       display: 'flex',
       gap: '30px',
       overflowX: 'auto' as const,
-      scrollBehavior: 'smooth',
+      scrollBehavior: 'smooth' as const,
       padding: '20px 0',
-      scrollbarWidth: 'none',
+      scrollbarWidth: 'none' as const,
     },
     techItem: {
       display: 'flex',
@@ -714,7 +714,12 @@ export default function Home() {
 
         <div style={styles.cardsGrid}>
           {differentials.map((item, index) => (
-            <article key={index} style={styles.card} className="card" data-reveal style={{ '--delay': `${index * 0.1}s` } as React.CSSProperties}>
+            <article
+              key={index}
+              style={{ ...styles.card, '--delay': `${index * 0.1}s` } as React.CSSProperties}
+              className="card"
+              data-reveal
+            >
               <div style={styles.iconWrapper} className="icon-wrapper">
                 {item.icon}
               </div>
@@ -742,7 +747,12 @@ export default function Home() {
 
         <div style={styles.segmentsGrid}>
           {segments.map((item, index) => (
-            <article key={index} style={styles.segmentCard} className="segment-card" data-reveal style={{ '--delay': `${index * 0.1}s` } as React.CSSProperties}>
+            <article
+              key={index}
+              style={{ ...styles.segmentCard, '--delay': `${index * 0.1}s` } as React.CSSProperties}
+              className="segment-card"
+              data-reveal
+            >
               <div style={styles.iconWrapper} className="icon-wrapper">
                 {item.icon}
               </div>
@@ -786,7 +796,11 @@ export default function Home() {
 
             <div style={styles.stepsContainer}>
               {processSteps.map((step, index) => (
-                <div key={step.number} style={styles.stepItem} data-reveal style={{ '--delay': `${index * 0.1}s` } as React.CSSProperties}>
+                <div
+                  key={step.number}
+                  style={{ ...styles.stepItem, '--delay': `${index * 0.1}s` } as React.CSSProperties}
+                  data-reveal
+                >
                   <div style={styles.stepNumber}>{step.number}</div>
                   <div>
                     <h4 style={styles.stepTitle}>{step.title}</h4>

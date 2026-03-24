@@ -19,15 +19,22 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await login({ login: loginField, password });
+      await Promise.race([
+        login({ login: loginField, password }),
+        new Promise<never>((_, reject) =>
+          window.setTimeout(() => reject(new Error("LOGIN_TIMEOUT")), 12000),
+        ),
+      ]);
 
       const state = location.state as { from?: string } | null;
       navigate(state?.from ?? "/admin/dashboard", { replace: true });
     } catch (requestError) {
       setError(
-        requestError instanceof ApiError
-          ? requestError.message
-          : "Nao foi possivel entrar no sistema.",
+        requestError instanceof Error && requestError.message === "LOGIN_TIMEOUT"
+          ? "Tempo limite ao autenticar. Verifique backend, token e conectividade."
+          : requestError instanceof ApiError
+            ? requestError.message
+            : "Nao foi possivel entrar no sistema.",
       );
     } finally {
       setLoading(false);

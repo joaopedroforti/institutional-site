@@ -10,12 +10,14 @@ const TITLES: Record<string, string> = {
   "/admin/negocios": "Pipes",
   "/admin/orcamentos": "Propostas",
   "/admin/propostas": "Propostas",
+  "/admin/whatsapp": "WhatsApp",
   "/admin/analitico": "Analitico",
   "/admin/configuracoes": "Configuracoes",
   "/admin/configuracoes/vendedores": "Vendedores",
   "/admin/configuracoes/propostas": "Propostas",
   "/admin/configuracoes/gerais": "Configuracoes Gerais",
   "/admin/configuracoes/precificacao": "Precificacao",
+  "/admin/configuracoes/whatsapp": "WhatsApp",
 };
 
 export default function AppHeader() {

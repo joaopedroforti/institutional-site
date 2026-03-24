@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Mail,
   MessageCircle,
+  Tag,
   Activity,
   HandCoins,
   FolderKanban,
@@ -30,7 +31,13 @@ import type {
   KanbanResponse,
   LostReasonOption,
   PipeOption,
+  WhatsAppConversationPayloadResponse,
+  WhatsAppConversationRecord,
+  WhatsAppMessageRecord,
+  WhatsAppQuickReplyRecord,
+  WhatsAppTagRecord,
 } from "../../types/admin";
+import WhatsAppConversationView from "../../components/whatsapp/WhatsAppConversationView";
 
 type EditableColumn = {
   id: number | string;
@@ -48,7 +55,7 @@ type UserOption = {
   name: string;
 };
 
-type LeadModalTab = "movimentacao" | "orcamentos" | "onboarding" | "notas";
+type LeadModalTab = "movimentacao" | "orcamentos" | "onboarding" | "notas" | "whatsapp";
 type EditableLeadField = "name" | "company" | "email" | "phone" | "responsavel" | null;
 
 const LEAD_MODAL_TABS: Array<{ key: LeadModalTab; label: string; icon: typeof Activity }> = [
@@ -56,6 +63,7 @@ const LEAD_MODAL_TABS: Array<{ key: LeadModalTab; label: string; icon: typeof Ac
   { key: "orcamentos", label: "Orcamentos", icon: HandCoins },
   { key: "onboarding", label: "Dados / Onboarding", icon: FolderKanban },
   { key: "notas", label: "Notas internas", icon: NotebookPen },
+  { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
 ];
 
 const PIPE_LABELS: Record<string, string> = {
@@ -230,9 +238,18 @@ function scoreStyles(band?: string | null): string {
 function detectContactTags(lead: KanbanLead, details?: Record<string, unknown> | null): string[] {
   const tags = new Set<string>();
 
-  const source = `${lead.source_url ?? ""} ${(lead.metadata?.source ?? "") as string}`.toLowerCase();
+  (lead.tags ?? []).forEach((tag) => {
+    if (tag?.name) {
+      tags.add(tag.name);
+    }
+  });
 
-  if (source.includes("whatsapp") || source.includes("zap") || source.includes("wa.me")) {
+  const source = `${lead.source_url ?? ""} ${(lead.metadata?.source ?? "") as string}`.toLowerCase();
+  const isDirectWhatsAppLead = source.includes("whatsapp:inbound") || Boolean(lead.metadata?.auto_created_from_whatsapp);
+
+  if (isDirectWhatsAppLead) {
+    tags.add("WhatsApp Direto");
+  } else if (source.includes("whatsapp") || source.includes("zap") || source.includes("wa.me")) {
     tags.add("Botao WhatsApp");
   }
 
@@ -252,6 +269,10 @@ function detectContactTags(lead: KanbanLead, details?: Record<string, unknown> |
       tags.add(label);
     }
   });
+
+  if (isDirectWhatsAppLead) {
+    tags.delete("Botao WhatsApp");
+  }
 
   if (tags.size === 0) {
     tags.add("Site institucional");
@@ -369,24 +390,54 @@ export default function PipesPage() {
   const [isSavingLeadInfo, setIsSavingLeadInfo] = useState(false);
   const [leadEditForm, setLeadEditForm] = useState({ name: "", email: "", phone: "", company: "" });
   const [assignedUserId, setAssignedUserId] = useState<string>("");
+  const [whatsappConversation, setWhatsappConversation] = useState<WhatsAppConversationRecord | null>(null);
+  const [whatsappMessages, setWhatsappMessages] = useState<WhatsAppMessageRecord[]>([]);
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [whatsappSending, setWhatsappSending] = useState(false);
+  const [whatsappQuickReplies, setWhatsappQuickReplies] = useState<WhatsAppQuickReplyRecord[]>([]);
+  const [tagCatalog, setTagCatalog] = useState<WhatsAppTagRecord[]>([]);
+  const [tagDraft, setTagDraft] = useState("");
+  const [tagColorDraft, setTagColorDraft] = useState("#2563eb");
+  const [savingTag, setSavingTag] = useState(false);
 
   const userOptions = useMemo(
     () => extractUserOptions(leadDetails, user?.name, user?.id),
     [leadDetails, user?.id, user?.name],
   );
 
+  useEffect(() => {
+    const suppressGlobalNotifier = Boolean(selectedLead) && activeTab === "whatsapp";
+    window.dispatchEvent(
+      new CustomEvent("forticorp:whatsapp-context", {
+        detail: { suppressGlobalNotifier },
+      }),
+    );
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("forticorp:whatsapp-context", {
+          detail: { suppressGlobalNotifier: false },
+        }),
+      );
+    };
+  }, [selectedLead, activeTab]);
+
   const loadBase = async () => {
     if (!token) {
       return;
     }
 
-    const [pipesResp, reasonsResp] = await Promise.all([
+    const [pipesResp, reasonsResp, quickRepliesResp, tagResp] = await Promise.all([
       apiRequest<{ data: PipeOption[] }>("/api/admin/pipes", {}, token),
       apiRequest<{ data: LostReasonOption[] }>("/api/admin/kanban/lost-reasons", {}, token),
+      apiRequest<{ data: WhatsAppQuickReplyRecord[] }>("/api/admin/whatsapp/quick-replies", {}, token),
+      apiRequest<{ data: WhatsAppTagRecord[] }>("/api/admin/whatsapp/tags", {}, token),
     ]);
 
     setPipes(pipesResp.data);
     setLostReasons(reasonsResp.data);
+    setWhatsappQuickReplies(quickRepliesResp.data ?? []);
+    setTagCatalog(tagResp.data ?? []);
   };
 
   const loadBoard = async (pipe: string, syncSettings = true, silent = false) => {
@@ -602,6 +653,8 @@ export default function PipesPage() {
     setCopiedProposalUrl(false);
     setActiveTab("movimentacao");
     setEditingField(null);
+    setWhatsappConversation(null);
+    setWhatsappMessages([]);
 
     try {
       const response = await apiRequest<LeadDetailsResponse>(`/api/admin/contacts/${lead.id}`, {}, token);
@@ -737,6 +790,255 @@ export default function PipesPage() {
     }
   };
 
+  const loadLeadWhatsAppConversation = async () => {
+    if (!token || !selectedLead) {
+      return;
+    }
+
+    setWhatsappLoading(true);
+
+    try {
+      const leadConversation = await apiRequest<{ data: WhatsAppConversationRecord | null }>(
+        `/api/admin/whatsapp/leads/${selectedLead.id}/conversation`,
+        {},
+        token,
+      );
+
+      if (!leadConversation.data) {
+        setWhatsappConversation(null);
+        setWhatsappMessages([]);
+        return;
+      }
+
+      const payload = await apiRequest<WhatsAppConversationPayloadResponse>(
+        `/api/admin/whatsapp/conversations/${leadConversation.data.id}`,
+        {},
+        token,
+      );
+
+      setWhatsappConversation(payload.data);
+      setWhatsappMessages(payload.messages);
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel carregar conversa do WhatsApp.");
+    } finally {
+      setWhatsappLoading(false);
+    }
+  };
+
+  const startLeadWhatsAppConversation = async () => {
+    if (!token || !selectedLead) {
+      return;
+    }
+
+    const phone = String(leadEditForm.phone || selectedLead.phone || "").trim();
+    if (!phone) {
+      setError("Este lead nao possui WhatsApp valido para iniciar conversa.");
+      return;
+    }
+
+    setWhatsappLoading(true);
+
+    try {
+      const response = await apiRequest<{ data: WhatsAppConversationRecord }>(
+        "/api/admin/whatsapp/conversations/start",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            phone,
+            display_name: leadEditForm.name || selectedLead.name,
+          }),
+        },
+        token,
+      );
+
+      const payload = await apiRequest<WhatsAppConversationPayloadResponse>(
+        `/api/admin/whatsapp/conversations/${response.data.id}`,
+        {},
+        token,
+      );
+
+      setWhatsappConversation(payload.data);
+      setWhatsappMessages(payload.messages);
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel iniciar conversa no WhatsApp.");
+    } finally {
+      setWhatsappLoading(false);
+    }
+  };
+
+  const sendLeadWhatsAppText = async (text: string) => {
+    if (!token || !whatsappConversation) {
+      return;
+    }
+
+    setWhatsappSending(true);
+    try {
+      const response = await apiRequest<{ data: WhatsAppMessageRecord }>(
+        `/api/admin/whatsapp/conversations/${whatsappConversation.id}/messages/text`,
+        {
+          method: "POST",
+          body: JSON.stringify({ text }),
+        },
+        token,
+      );
+
+      setWhatsappMessages((prev) =>
+        [...prev, response.data].sort((a, b) => a.id - b.id),
+      );
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel enviar mensagem.");
+    } finally {
+      setWhatsappSending(false);
+    }
+  };
+
+  const sendLeadWhatsAppImage = async (payload: { base64: string; mime: string; filename?: string; caption?: string }) => {
+    if (!token || !whatsappConversation) {
+      return;
+    }
+
+    setWhatsappSending(true);
+    try {
+      const response = await apiRequest<{ data: WhatsAppMessageRecord }>(
+        `/api/admin/whatsapp/conversations/${whatsappConversation.id}/messages/image`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_base64: payload.base64,
+            media_mime: payload.mime,
+            filename: payload.filename,
+            caption: payload.caption,
+          }),
+        },
+        token,
+      );
+
+      setWhatsappMessages((prev) =>
+        [...prev, response.data].sort((a, b) => a.id - b.id),
+      );
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel enviar imagem.");
+    } finally {
+      setWhatsappSending(false);
+    }
+  };
+
+  const sendLeadWhatsAppAudio = async (payload: { base64: string; mime: string; filename?: string }) => {
+    if (!token || !whatsappConversation) {
+      return;
+    }
+
+    setWhatsappSending(true);
+    try {
+      const response = await apiRequest<{ data: WhatsAppMessageRecord }>(
+        `/api/admin/whatsapp/conversations/${whatsappConversation.id}/messages/audio`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_base64: payload.base64,
+            media_mime: payload.mime,
+            filename: payload.filename,
+          }),
+        },
+        token,
+      );
+
+      setWhatsappMessages((prev) =>
+        [...prev, response.data].sort((a, b) => a.id - b.id),
+      );
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel enviar audio.");
+    } finally {
+      setWhatsappSending(false);
+    }
+  };
+
+  const sendLeadWhatsAppDocument = async (payload: { base64: string; mime: string; filename?: string; caption?: string }) => {
+    if (!token || !whatsappConversation) {
+      return;
+    }
+
+    setWhatsappSending(true);
+    try {
+      const response = await apiRequest<{ data: WhatsAppMessageRecord }>(
+        `/api/admin/whatsapp/conversations/${whatsappConversation.id}/messages/document`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_base64: payload.base64,
+            media_mime: payload.mime,
+            filename: payload.filename,
+            caption: payload.caption,
+          }),
+        },
+        token,
+      );
+
+      setWhatsappMessages((prev) =>
+        [...prev, response.data].sort((a, b) => a.id - b.id),
+      );
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel enviar documento.");
+    } finally {
+      setWhatsappSending(false);
+    }
+  };
+
+  const addLeadTag = async () => {
+    if (!token || !selectedLead) {
+      return;
+    }
+
+    const value = tagDraft.trim();
+    if (!value) {
+      return;
+    }
+
+    setSavingTag(true);
+    try {
+      const matched = tagCatalog.find((tag) => tag.name.toLowerCase() === value.toLowerCase() || tag.slug === value.toLowerCase());
+      await apiRequest(
+        `/api/admin/contacts/${selectedLead.id}/tags`,
+        {
+          method: "POST",
+          body: JSON.stringify(
+            matched
+              ? { tag_id: matched.id }
+              : { name: value, color: tagColorDraft },
+          ),
+        },
+        token,
+      );
+
+      setTagDraft("");
+      await Promise.all([refreshSelectedLeadDetails(), loadBoard(pipeline, false, true), loadBase()]);
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel adicionar tag.");
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
+  const removeLeadTag = async (tagId: number) => {
+    if (!token || !selectedLead) {
+      return;
+    }
+
+    setSavingTag(true);
+    try {
+      await apiRequest(
+        `/api/admin/contacts/${selectedLead.id}/tags/${tagId}`,
+        { method: "DELETE" },
+        token,
+      );
+      await Promise.all([refreshSelectedLeadDetails(), loadBoard(pipeline, false, true)]);
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel remover tag.");
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
   const moveSettingsColumn = (index: number, direction: -1 | 1) => {
     setSettingsColumns((prev) => {
       const next = [...prev];
@@ -837,19 +1139,37 @@ export default function PipesPage() {
     }
   };
 
-  const currentLeadStageSlug = String(selectedLead?.status ?? "");
-  const currentLeadPipe = String(selectedLead?.pipeline ?? pipeline);
+  const currentLeadStageSlug = String((leadDetails?.status as string | undefined) ?? selectedLead?.status ?? "");
+  const currentLeadPipe = String((leadDetails?.pipeline as string | undefined) ?? selectedLead?.pipeline ?? pipeline);
 
   const canApproveOrReject = currentLeadPipe === "comercial";
   const canProjectDelivered = currentLeadPipe === "desenvolvimento" && currentLeadStageSlug === "entrega";
   const canProjectFinalize = currentLeadPipe === "cs" && currentLeadStageSlug !== "projeto-finalizado";
 
   const pipeLabel = useMemo(() => PIPE_LABELS[pipeline] ?? "Comercial", [pipeline]);
-
-  const cardTags = useMemo(
-    () => (selectedLead ? detectContactTags(selectedLead, leadDetails) : []),
-    [selectedLead, leadDetails],
+  const modalStageColumns = useMemo(
+    () =>
+      [...columns]
+        .filter((column) => (column.pipeline ?? pipeline) === currentLeadPipe)
+        .sort((a, b) => a.position - b.position),
+    [columns, currentLeadPipe, pipeline],
   );
+
+  const cardTags = useMemo(() => {
+    if (!selectedLead) {
+      return [];
+    }
+
+    const explicitTags = ((leadDetails?.tags as Array<Record<string, unknown>> | undefined) ?? (selectedLead.tags as Array<Record<string, unknown>> | undefined) ?? [])
+      .map((tag) => String(tag.name ?? ""))
+      .filter(Boolean);
+
+    if (explicitTags.length > 0) {
+      return explicitTags;
+    }
+
+    return detectContactTags(selectedLead, leadDetails);
+  }, [selectedLead, leadDetails]);
 
   const timelineItems = useMemo(() => {
     const tracking = leadDetails?.tracking as { timeline?: Array<Record<string, unknown>> } | undefined;
@@ -875,6 +1195,7 @@ export default function PipesPage() {
     return value ? String(value) : "";
   }, [leadDetails]);
   const proposalUrl = proposalSlug ? `${mainSiteBaseUrl.replace(/\/$/, "")}/proposta/${proposalSlug}` : "";
+  const modalContentClass = activeTab === "whatsapp" ? "h-full overflow-hidden p-3" : "h-full overflow-y-auto p-3";
   const onboardingMeta = useMemo(() => {
     const metadata = (leadDetails?.metadata as Record<string, unknown> | undefined) ?? {};
     return (metadata.onboarding as Record<string, unknown> | undefined) ?? null;
@@ -1013,6 +1334,41 @@ export default function PipesPage() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedLead, selectedCardIndex, visibleCards]);
+
+  useEffect(() => {
+    if (!selectedLead || activeTab !== "whatsapp") {
+      return;
+    }
+
+    void loadLeadWhatsAppConversation();
+  }, [activeTab, selectedLead?.id]);
+
+  useEffect(() => {
+    if (!token || activeTab !== "whatsapp" || !whatsappConversation) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void apiRequest<{ data: WhatsAppMessageRecord[] }>(
+        `/api/admin/whatsapp/conversations/${whatsappConversation.id}/messages?per_page=120`,
+        {},
+        token,
+      )
+        .then((response) => {
+          setWhatsappMessages((prev) => {
+            const map = new Map<number, WhatsAppMessageRecord>();
+            prev.forEach((message) => map.set(message.id, message));
+            response.data.forEach((message) => map.set(message.id, message));
+            return Array.from(map.values()).sort((a, b) => a.id - b.id);
+          });
+        })
+        .catch(() => {
+          // polling silencioso
+        });
+    }, 7000);
+
+    return () => window.clearInterval(timer);
+  }, [token, activeTab, whatsappConversation?.id]);
 
   return (
     <PageShell>
@@ -1431,168 +1787,251 @@ export default function PipesPage() {
             className="flex h-[88vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-end bg-gradient-to-r from-blue-900 via-blue-700 to-blue-400 px-4 py-3">
-              <div className="flex items-center gap-2 text-xs text-white">
-                <span className="rounded-md border border-white/30 bg-white/15 px-2 py-1">
-                  Entrada: {formatDate(String(leadDetails?.created_at ?? selectedLead.created_at ?? ""))}
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-md border border-white/30 bg-white/15 px-2 py-1">
-                  <Clock3 size={12} />
-                  {timeSince(String(leadDetails?.created_at ?? selectedLead.created_at ?? ""))}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => navigateModalCard(-1)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/30 bg-white/20 hover:bg-white/30"
-                  title="Card anterior"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateModalCard(1)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/30 bg-white/20 hover:bg-white/30"
-                  title="Proximo card"
-                >
-                  <ChevronRight size={14} />
-                </button>
-                <span className="rounded-md border border-white/30 bg-white/15 px-2 py-1">
-                  {selectedCardIndex >= 0 ? selectedCardIndex + 1 : 1}/{Math.max(1, visibleCards.length)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedLead(null);
-                    setLeadDetails(null);
-                  }}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/30 bg-white/20 hover:bg-white/30"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-3 border-b border-slate-200 px-4 py-3 md:grid-cols-[1fr_auto]">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 text-lg font-semibold text-slate-900">
-                  {editingField === "name" ? (
-                    <input
-                      autoFocus
-                      value={leadEditForm.name}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(event) => setLeadEditForm((prev) => ({ ...prev, name: event.target.value }))}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-base"
-                    />
-                  ) : (
-                    <button type="button" onClick={() => setEditingField("name")} className="hover:text-blue-700">
-                      {leadEditForm.name || selectedLead.name}
-                    </button>
-                  )}
-
-                  <span>|</span>
-
-                  {editingField === "company" ? (
-                    <input
-                      autoFocus
-                      value={leadEditForm.company}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(event) => setLeadEditForm((prev) => ({ ...prev, company: event.target.value }))}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-base"
-                    />
-                  ) : (
-                    <button type="button" onClick={() => setEditingField("company")} className="hover:text-blue-700">
-                      {leadEditForm.company || "Sem empresa"}
-                    </button>
-                  )}
+            <div className="border-b border-blue-900/40 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 px-4 py-3 text-white">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/12 text-base font-semibold text-white">
+                    {(leadEditForm.name || selectedLead.name || "L")
+                      .split(" ")
+                      .map((part) => part[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-xl font-semibold leading-none">
+                      {editingField === "name" ? (
+                        <input
+                          autoFocus
+                          value={leadEditForm.name}
+                          onBlur={() => setEditingField(null)}
+                          onChange={(event) => setLeadEditForm((prev) => ({ ...prev, name: event.target.value }))}
+                          className="w-full rounded-md border border-white/30 bg-white/20 px-2 py-1 text-base text-white"
+                        />
+                      ) : (
+                        <button type="button" onClick={() => setEditingField("name")} className="truncate text-left hover:text-blue-100">
+                          {leadEditForm.name || selectedLead.name}
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-1 truncate text-xs uppercase tracking-wide text-blue-100">
+                      {editingField === "company" ? (
+                        <input
+                          autoFocus
+                          value={leadEditForm.company}
+                          onBlur={() => setEditingField(null)}
+                          onChange={(event) => setLeadEditForm((prev) => ({ ...prev, company: event.target.value }))}
+                          className="w-full rounded-md border border-white/30 bg-white/20 px-2 py-1 text-xs uppercase tracking-wide text-white"
+                        />
+                      ) : (
+                        <button type="button" onClick={() => setEditingField("company")} className="truncate text-left hover:text-blue-50">
+                          {leadEditForm.company || "SEM EMPRESA"}
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-blue-100">
+                      <Mail size={12} />
+                      {editingField === "email" ? (
+                        <input
+                          autoFocus
+                          value={leadEditForm.email}
+                          onBlur={() => setEditingField(null)}
+                          onChange={(event) => setLeadEditForm((prev) => ({ ...prev, email: event.target.value }))}
+                          className="rounded-md border border-white/30 bg-white/20 px-2 py-1 text-xs text-white"
+                        />
+                      ) : (
+                        <button type="button" onClick={() => setEditingField("email")} className="hover:text-white">
+                          {leadEditForm.email || "Sem e-mail"}
+                        </button>
+                      )}
+                      {leadEditForm.email && leadEditForm.phone ? <span className="opacity-70">|</span> : null}
+                      <MessageCircle size={12} />
+                      {editingField === "phone" ? (
+                        <input
+                          autoFocus
+                          value={leadEditForm.phone}
+                          onBlur={() => setEditingField(null)}
+                          onChange={(event) => setLeadEditForm((prev) => ({ ...prev, phone: event.target.value }))}
+                          className="rounded-md border border-white/30 bg-white/20 px-2 py-1 text-xs text-white"
+                        />
+                      ) : (
+                        <button type="button" onClick={() => setEditingField("phone")} className="hover:text-white">
+                          {leadEditForm.phone || "Sem WhatsApp"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                  <Mail size={14} />
-                  {editingField === "email" ? (
-                    <input
-                      autoFocus
-                      value={leadEditForm.email}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(event) => setLeadEditForm((prev) => ({ ...prev, email: event.target.value }))}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                    />
-                  ) : (
-                    <button type="button" onClick={() => setEditingField("email")} className="hover:text-blue-700">
-                      {leadEditForm.email || "Sem e-mail"}
-                    </button>
-                  )}
-
-                  <span>|</span>
-                  <MessageCircle size={14} className="text-green-700" />
-                  {editingField === "phone" ? (
-                    <input
-                      autoFocus
-                      value={leadEditForm.phone}
-                      onBlur={() => setEditingField(null)}
-                      onChange={(event) => setLeadEditForm((prev) => ({ ...prev, phone: event.target.value }))}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-sm"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setEditingField("phone")}
-                      className="font-medium text-green-700 hover:underline"
-                    >
-                      {leadEditForm.phone || "Sem WhatsApp"}
-                    </button>
-                  )}
-                  {!!leadEditForm.phone && (
-                    <a
-                      href={`https://wa.me/55${cleanPhoneForWa(leadEditForm.phone)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-md border border-green-200 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50"
-                    >
-                      abrir
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div className="min-w-[280px]">
-                <label className="mb-1 block text-xs font-medium text-slate-600">Responsavel</label>
-                {editingField === "responsavel" ? (
-                  <select
-                    autoFocus
-                    value={assignedUserId}
-                    onBlur={() => setEditingField(null)}
-                    onChange={(event) => setAssignedUserId(event.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
-                  >
-                    <option value="">Sem responsavel</option>
-                    {userOptions.map((option) => (
-                      <option key={`a-${option.id}`} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
+                <div className="flex items-center gap-2 text-xs text-white">
+                  <span className="rounded-md border border-white/30 bg-white/15 px-2 py-1">
+                    {selectedCardIndex >= 0 ? selectedCardIndex + 1 : 1}/{Math.max(1, visibleCards.length)}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setEditingField("responsavel")}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    onClick={() => navigateModalCard(-1)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/30 bg-white/20 hover:bg-white/30"
+                    title="Card anterior"
                   >
-                    {userOptions.find((option) => String(option.id) === assignedUserId)?.name ?? "Sem responsavel"}
+                    <ChevronLeft size={14} />
                   </button>
-                )}
-
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {cardTags.map((tag) => (
-                    <span key={`modal-tag-${tag}`} className="rounded-md border border-blue-100 bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700">
-                      {tag}
-                    </span>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={() => navigateModalCard(1)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/30 bg-white/20 hover:bg-white/30"
+                    title="Proximo card"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLead(null);
+                      setLeadDetails(null);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/30 bg-white/20 hover:bg-white/30"
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
+              </div>
+
+              <div className="mt-3 grid gap-2 border-t border-white/15 pt-2 md:grid-cols-[1fr_auto] md:items-start">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-blue-100">
+                  <span className="rounded-md border border-white/25 bg-white/10 px-2 py-1">
+                    Entrada: {formatDate(String(leadDetails?.created_at ?? selectedLead.created_at ?? ""))}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2 py-1">
+                    <Clock3 size={12} />
+                    {timeSince(String(leadDetails?.created_at ?? selectedLead.created_at ?? ""))}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-start gap-2 text-xs text-blue-100 md:justify-end">
+                  <div className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2 py-1">
+                    <span className="text-[11px] uppercase tracking-wide text-blue-100">Responsavel</span>
+                    <select
+                      value={assignedUserId}
+                      onChange={(event) => setAssignedUserId(event.target.value)}
+                      className="rounded bg-transparent px-1 py-0.5 text-xs text-white outline-none"
+                    >
+                      <option value="" className="text-slate-900">Sem responsavel</option>
+                      {userOptions.map((option) => (
+                        <option key={`header-a-${option.id}`} value={option.id} className="text-slate-900">
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/10 px-2 py-1">
+                    <Tag size={12} />
+                    <input
+                      value={tagDraft}
+                      onChange={(event) => setTagDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void addLeadTag();
+                        }
+                      }}
+                      list="lead-modal-tag-options"
+                      placeholder="Tag"
+                      className="w-24 bg-transparent text-xs text-white placeholder:text-blue-200 outline-none"
+                    />
+                    <datalist id="lead-modal-tag-options">
+                      {tagCatalog.map((tag) => (
+                        <option key={`tag-opt-${tag.id}`} value={tag.name} />
+                      ))}
+                    </datalist>
+                    <input
+                      type="color"
+                      value={tagColorDraft}
+                      onChange={(event) => setTagColorDraft(event.target.value)}
+                      className="h-5 w-5 rounded border border-white/30 bg-transparent p-0"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void addLeadTag();
+                      }}
+                      disabled={savingTag}
+                      className="rounded border border-white/30 px-1.5 py-0.5 text-[10px] text-white hover:bg-white/15 disabled:opacity-60"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 md:justify-end">
+                    {cardTags.map((tag) => {
+                      const matched = tagCatalog.find((item) => item.name === tag);
+                      return (
+                        <button
+                          key={`header-tag-${tag}`}
+                          type="button"
+                          onClick={() => {
+                            if (matched) {
+                              void removeLeadTag(matched.id);
+                            }
+                          }}
+                          className="rounded-md border border-white/25 bg-white/10 px-2 py-0.5 text-[10px] text-white hover:bg-white/15"
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 flex justify-end">
+                <div className="text-right">
+                  <p className="text-[11px] uppercase tracking-wide text-blue-100">Valor do negocio</p>
+                  <p className="text-3xl font-semibold leading-none text-white">
+                    {formatMoney(leadDetails?.deal_value ?? selectedLead.deal_value)}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="mt-3 grid items-center gap-1 rounded-lg bg-white/10 p-1"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.max(modalStageColumns.length, 1)}, minmax(0, 1fr))`,
+                }}
+              >
+                {modalStageColumns.map((stage) => {
+                  const isActive = stage.slug === currentLeadStageSlug;
+                  return (
+                    <button
+                      key={`stage-tab-${stage.id}`}
+                      type="button"
+                      onClick={() => {
+                        if (isActive || savingMove) {
+                          return;
+                        }
+                        void performMove(selectedLead, stage);
+                        setSelectedLead((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                status: stage.slug,
+                                pipeline: stage.pipeline ?? prev.pipeline,
+                              }
+                            : prev,
+                        );
+                      }}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                        isActive
+                          ? "bg-white text-blue-900"
+                          : "text-blue-100 hover:bg-white/20"
+                      }`}
+                    >
+                      {stage.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-[240px_1fr]">
-              <aside className="flex min-h-0 flex-row gap-2 overflow-x-auto rounded-2xl border border-blue-800 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700 p-3 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 p-4 lg:grid-cols-[200px_1fr]">
+              <aside className="flex min-h-0 flex-row gap-2 border-b border-slate-200 bg-slate-50 p-3 lg:flex-col lg:border-b-0 lg:border-r lg:border-slate-200">
                 {LEAD_MODAL_TABS.map((tab) => {
                   const Icon = tab.icon;
 
@@ -1601,10 +2040,10 @@ export default function PipesPage() {
                       key={tab.key}
                       type="button"
                       onClick={() => setActiveTab(tab.key)}
-                      className={`flex min-w-[190px] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition lg:min-w-0 lg:justify-start ${
+                      className={`flex min-w-[170px] items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition lg:min-w-0 lg:justify-start ${
                         activeTab === tab.key
-                          ? "bg-white/20 text-white shadow-md"
-                          : "border border-white/20 bg-white/10 text-blue-50 hover:bg-white/20"
+                          ? "bg-blue-700 text-white shadow-sm"
+                          : "text-slate-600 hover:bg-slate-100"
                       }`}
                     >
                       <Icon size={16} />
@@ -1615,7 +2054,7 @@ export default function PipesPage() {
               </aside>
 
               <section className="min-h-0 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                <div className="h-full overflow-y-auto p-3">
+                <div className={modalContentClass}>
                   {detailsLoading && <p className="text-sm text-slate-500">Carregando perfil...</p>}
 
                   {!detailsLoading && activeTab === "movimentacao" && (
@@ -1808,6 +2247,48 @@ export default function PipesPage() {
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+
+                  {!detailsLoading && activeTab === "whatsapp" && (
+                    <div className="h-full min-h-0">
+                      {!leadEditForm.phone && !selectedLead.phone ? (
+                        <div className="flex h-full flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-center">
+                          <p className="text-sm font-medium text-slate-700">Sem WhatsApp valido neste lead.</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Adicione um numero no perfil para liberar a conversa.
+                          </p>
+                        </div>
+                      ) : whatsappConversation ? (
+                        <WhatsAppConversationView
+                          conversation={whatsappConversation}
+                          messages={whatsappMessages}
+                          loading={whatsappLoading}
+                          disabled={whatsappSending}
+                          onSendText={sendLeadWhatsAppText}
+                          onSendImage={sendLeadWhatsAppImage}
+                          onSendDocument={sendLeadWhatsAppDocument}
+                          onSendAudio={sendLeadWhatsAppAudio}
+                          quickReplies={whatsappQuickReplies}
+                        />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-center">
+                          <p className="text-sm font-medium text-slate-700">Nenhuma conversa encontrada para este numero.</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Voce pode iniciar uma conversa agora e seguir o atendimento pelo CRM.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void startLeadWhatsAppConversation();
+                            }}
+                            disabled={whatsappLoading}
+                            className="mt-3 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-60"
+                          >
+                            {whatsappLoading ? "Iniciando..." : "Iniciar conversa"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 

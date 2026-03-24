@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class ContactRequest extends Model
 {
@@ -15,6 +17,7 @@ class ContactRequest extends Model
         'lead_kanban_column_id',
         'name',
         'phone',
+        'phone_normalized',
         'email',
         'company',
         'message',
@@ -69,5 +72,33 @@ class ContactRequest extends Model
     public function histories(): HasMany
     {
         return $this->hasMany(LeadHistory::class)->orderByDesc('occurred_at');
+    }
+
+    public function whatsappConversations(): HasMany
+    {
+        return $this->hasMany(WhatsAppConversation::class, 'lead_id');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(CrmTag::class, 'contact_request_tag')
+            ->withTimestamps();
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: function (?string $value, array $attributes) {
+                $normalized = preg_replace('/\D+/', '', (string) ($value ?? ''));
+                if ($normalized !== '' && strlen($normalized) > 11 && str_starts_with($normalized, '55')) {
+                    $normalized = substr($normalized, -11);
+                }
+
+                return [
+                    'phone' => $value,
+                    'phone_normalized' => $normalized !== '' ? $normalized : null,
+                ];
+            },
+        );
     }
 }

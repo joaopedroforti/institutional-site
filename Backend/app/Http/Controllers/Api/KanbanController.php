@@ -36,7 +36,7 @@ class KanbanController extends Controller
             ->with([
                 'contacts' => fn ($query) => $query
                     ->where('pipeline', $pipeline)
-                    ->with(['visitorSession', 'kanbanColumn'])
+                    ->with(['visitorSession', 'kanbanColumn', 'tags'])
                     ->orderBy('lead_order')
                     ->orderBy('created_at'),
             ])
@@ -107,7 +107,7 @@ class KanbanController extends Controller
         );
 
         return response()->json([
-            'data' => $contact->fresh(['visitorSession', 'kanbanColumn']),
+            'data' => $contact->fresh(['visitorSession', 'kanbanColumn', 'tags']),
         ], 201);
     }
 
