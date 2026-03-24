@@ -18,7 +18,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://bgadmin.forticorp.com.br",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
     },
