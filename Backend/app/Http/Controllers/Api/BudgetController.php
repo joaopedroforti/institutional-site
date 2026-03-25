@@ -91,8 +91,8 @@ class BudgetController extends Controller
         }
 
         if ($budget->status === 'pending_validation') {
-            $totalAmount = (float) ($budget->total_amount ?? 0);
-            $deadlineDays = (int) ($budget->internal_deadline_days ?? 0);
+            $totalAmount = (float) ($payload['total_amount'] ?? 0);
+            $deadlineDays = (int) ($payload['internal_deadline_days'] ?? 0);
 
             if ($totalAmount <= 0 || $deadlineDays <= 0) {
                 return response()->json([

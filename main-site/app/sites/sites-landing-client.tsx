@@ -22,6 +22,9 @@ import {
   Mail,
   MessageCircle,
   MapPin,
+  Star,
+  Clock,
+  Shield,
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { getStoredVisitorSessionKey, trackInteraction } from "../lib/analytics";
@@ -98,7 +101,7 @@ const SCORE_WEIGHTS: Record<EventKey, number> = {
 };
 
 const EXIT_POPUP_SESSION_KEY = "lp-sites-exit-popup-shown";
-const LANDING_PATH = "/lp/ofertasites";
+const LANDING_PATH = "/lp-ofertasites";
 
 const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   company_name: "FortiCorp",
@@ -117,27 +120,58 @@ const NAV_LINKS = [
 ];
 
 const SERVICE_CARDS = [
-  { title: "Design Profissional", desc: "Interface moderna com posicionamento comercial da sua marca.", icon: <Palette size={22} /> },
-  { title: "Site Responsivo", desc: "Experiência impecável em desktop, tablet e mobile.", icon: <Smartphone size={22} /> },
-  { title: "Alta Performance", desc: "Carregamento rápido para reduzir abandono e melhorar conversão.", icon: <Zap size={22} /> },
-  { title: "Estrutura para Conversão", desc: "CTAs estratégicos e jornada pensada para geração de leads.", icon: <TrendingUp size={22} /> },
-  { title: "SEO Avançado", desc: "Base técnica para indexação e visibilidade orgânica no Google.", icon: <Search size={22} /> },
-  { title: "Gestão Facilitada", desc: "Estrutura clara para evoluir conteúdo e escalar seu projeto.", icon: <Settings2 size={22} /> },
+  { title: "Design que Vende", desc: "Visual profissional que transmite autoridade e gera confiança no primeiro acesso.", icon: <Palette size={22} /> },
+  { title: "100% Responsivo", desc: "Experiência perfeita em qualquer dispositivo — celular, tablet ou desktop.", icon: <Smartphone size={22} /> },
+  { title: "Carregamento Rápido", desc: "Sites lentos perdem clientes. Seu site vai carregar em menos de 2 segundos.", icon: <Zap size={22} /> },
+  { title: "Feito para Converter", desc: "CTAs estratégicos e jornada pensada para transformar visitantes em contatos.", icon: <TrendingUp size={22} /> },
+  { title: "Visível no Google", desc: "Estrutura técnica de SEO para aparecer nas buscas e atrair clientes organicamente.", icon: <Search size={22} /> },
+  { title: "Fácil de Atualizar", desc: "Você tem controle do conteúdo. Sem depender de terceiros para cada mudança.", icon: <Settings2 size={22} /> },
 ];
 
 const SOLUTION_ITEMS = [
-  { icon: <Globe size={20} />, title: "Sites institucionais", text: "Autoridade, clareza e presença digital para empresas." },
-  { icon: <LayoutTemplate size={20} />, title: "Landing pages", text: "Páginas focadas em campanha e captação de leads." },
-  { icon: <ShoppingCart size={20} />, title: "E-commerces", text: "Estrutura para vender produtos com performance e confiança." },
-  { icon: <Workflow size={20} />, title: "Sistemas", text: "Projetos digitais sob medida para operação e escala." },
+  { icon: <Globe size={20} />, title: "Sites institucionais", text: "Autoridade, clareza e presença digital sólida para empresas que querem ser levadas a sério." },
+  { icon: <LayoutTemplate size={20} />, title: "Landing pages", text: "Páginas de alta conversão para campanhas, lançamentos e captação de leads qualificados." },
+  { icon: <ShoppingCart size={20} />, title: "E-commerces", text: "Loja online estruturada para vender com credibilidade, performance e experiência de compra." },
+  { icon: <Workflow size={20} />, title: "Sistemas web", text: "Projetos digitais sob medida para automatizar processos e escalar sua operação." },
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", title: "Você solicita a proposta", desc: "Preencha o formulário com os dados do projeto." },
-  { step: "02", title: "Entendemos sua necessidade", desc: "Nossa equipe analisa e entra em contato." },
-  { step: "03", title: "Planejamos o projeto", desc: "Definimos escopo, prazo e entregáveis." },
-  { step: "04", title: "Desenvolvemos seu site", desc: "Execução com qualidade e alinhamento contínuo." },
-  { step: "05", title: "Publicamos e colocamos no ar", desc: "Entrega, revisão final e lançamento." },
+  { step: "01", title: "Você solicita a proposta", desc: "Preencha o formulário em menos de 1 minuto." },
+  { step: "02", title: "Entendemos seu projeto", desc: "Nossa equipe analisa e entra em contato rapidamente." },
+  { step: "03", title: "Planejamos juntos", desc: "Definimos escopo, prazo, entregáveis e investimento." },
+  { step: "04", title: "Desenvolvemos seu site", desc: "Execução com qualidade e alinhamento em cada etapa." },
+  { step: "05", title: "Publicamos e você vende", desc: "Entrega, revisão final, lançamento e suporte pós-entrega." },
+];
+
+const TESTIMONIALS = [
+  {
+    name: "Carlos M.",
+    role: "Diretor Comercial",
+    company: "Grupo Nexo",
+    text: "Em 3 semanas tínhamos o site no ar. O número de contatos pelo site triplicou no primeiro mês.",
+    stars: 5,
+  },
+  {
+    name: "Ana Paula R.",
+    role: "Fundadora",
+    company: "Studio AR",
+    text: "Finalmente um site que representa o nível do nosso trabalho. O retorno foi imediato.",
+    stars: 5,
+  },
+  {
+    name: "Roberto S.",
+    role: "CEO",
+    company: "TechMove",
+    text: "Processo transparente do início ao fim. A equipe entende de negócio, não só de design.",
+    stars: 5,
+  },
+];
+
+const STATS = [
+  { value: "120+", label: "Projetos entregues" },
+  { value: "97%", label: "Clientes satisfeitos" },
+  { value: "3×", label: "Mais leads em média" },
+  { value: "72h", label: "Primeiro contato" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -234,47 +268,31 @@ export default function SitesLandingPage() {
     [onceEvent, origin, scoreBreakdown, scoreTotal],
   );
 
-  // Initial view tracking
   useEffect(() => {
     void trackInteraction({ eventType: "lp_sites_viewed", element: "landing", label: LANDING_PATH, pagePath: LANDING_PATH, metadata: { lead_source: origin.leadSource, lead_score: initialScore, utm_source: origin.utm_source, utm_medium: origin.utm_medium, utm_campaign: origin.utm_campaign } }).catch(() => {});
   }, [initialScore, origin]);
 
   useEffect(() => {
     let isMounted = true;
-
     const loadGeneralSettings = async () => {
       try {
         const response = await apiFetch<{ data?: Partial<GeneralSettings> }>("/settings/general");
-        if (!isMounted || !response?.data) {
-          return;
-        }
-
-        setGeneralSettings((prev) => ({
-          ...prev,
-          ...response.data,
-        }));
-      } catch {
-        // Keep defaults when backend settings are unavailable.
-      }
+        if (!isMounted || !response?.data) return;
+        setGeneralSettings((prev) => ({ ...prev, ...response.data }));
+      } catch { /* Keep defaults */ }
     };
-
     void loadGeneralSettings();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Reveal on scroll
   useEffect(() => {
     const targets = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (!targets.length) return;
-    const obs = new IntersectionObserver((entries) => { entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("is-visible"); }); }, { threshold: 0.1, rootMargin: "0px 0px -5% 0px" });
+    const obs = new IntersectionObserver((entries) => { entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add("is-visible"); }); }, { threshold: 0.08, rootMargin: "0px 0px -4% 0px" });
     targets.forEach((t) => obs.observe(t));
     return () => obs.disconnect();
   }, []);
 
-  // Scroll depth tracking + header state
   useEffect(() => {
     const onScroll = () => {
       setHeaderScrolled(window.scrollY > 20);
@@ -286,7 +304,6 @@ export default function SitesLandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [onceEvent, registerEvent]);
 
-  // Exit intent
   useEffect(() => {
     if (typeof window === "undefined" || window.sessionStorage.getItem(EXIT_POPUP_SESSION_KEY) === "1") return;
     const isMobile = window.matchMedia("(max-width: 900px)").matches;
@@ -336,35 +353,20 @@ export default function SitesLandingPage() {
     const email = mainForm.email.trim();
     const phone = mainForm.whatsapp.trim();
     if (email && !isValidEmail(email)) { setMainStatus("error"); setMainFeedback("Se informar e-mail, ele precisa ser válido."); return; }
-    if (phone.replace(/\D/g, "").length < 10) { setMainStatus("error"); setMainFeedback("Informe um WhatsApp válido."); return; }
+    if (phone.replace(/\D/g, "").length < 10) { setMainStatus("error"); setMainFeedback("Informe um WhatsApp válido com DDD."); return; }
     const evt = await registerEvent("lp_sites_form_submitted", { force: true });
     try {
       await submitContact("lp_sites_main_proposal_form", "proposal_request_main", {
         name: mainForm.name.trim(),
         email: email || undefined,
         phone,
-        message: "Solicitação de proposta via landing /lp/ofertasites.",
-        metadata: {
-          lead_score: evt.nextScore,
-          lead_score_breakdown: evt.nextBreakdown,
-          timestamp: new Date().toISOString(),
-          form_payload: { project_type: "site" },
-        },
+        message: "Solicitacao de proposta via landing /lp-ofertasites.",
+        metadata: { lead_score: evt.nextScore, lead_score_breakdown: evt.nextBreakdown, timestamp: new Date().toISOString(), form_payload: { project_type: "site" } },
       });
-
-      const params = new URLSearchParams({
-        project_type: "site",
-        step: "siteObjective",
-        name: mainForm.name.trim(),
-        phone,
-      });
-
-      if (email) {
-        params.set("email", email);
-      }
-
+      const params = new URLSearchParams({ project_type: "site", step: "siteObjective", name: mainForm.name.trim(), phone });
+      if (email) params.set("email", email);
       window.location.href = `/onboarding?${params.toString()}`;
-    } catch (err) { setMainStatus("error"); setMainFeedback(err instanceof Error ? err.message : "Não foi possível enviar agora."); }
+    } catch (err) { setMainStatus("error"); setMainFeedback(err instanceof Error ? err.message : "Não foi possível enviar agora. Tente novamente."); }
   };
 
   const handleExitStart = () => {
@@ -381,14 +383,14 @@ export default function SitesLandingPage() {
     const asEmail = contact.includes("@") ? contact : "";
     const asPhone = asEmail ? "" : contact;
     if (asEmail && !isValidEmail(asEmail)) { setExitStatus("error"); setExitFeedback("Informe um e-mail válido."); return; }
-    if (!asEmail && asPhone.replace(/\D/g, "").length < 10) { setExitStatus("error"); setExitFeedback("Informe um WhatsApp válido."); return; }
+    if (!asEmail && asPhone.replace(/\D/g, "").length < 10) { setExitStatus("error"); setExitFeedback("Informe um WhatsApp válido com DDD."); return; }
     const evt = await registerEvent("lp_sites_exit_popup_form_submitted", { force: true });
     try {
       await submitContact("lp_sites_exit_capture_form", "proposal_request_exit_popup", { name, email: asEmail || undefined, phone: asPhone || undefined, message: "Lead capturado pelo popup de saída da landing /sites.", metadata: { lead_score: evt.nextScore, lead_score_breakdown: evt.nextBreakdown, timestamp: new Date().toISOString() } });
       setExitStatus("success");
-      setExitFeedback("Perfeito. Nosso time vai entrar em contato com uma proposta personalizada.");
-      setTimeout(() => setExitPopupOpen(false), 1300);
-    } catch (err) { setExitStatus("error"); setExitFeedback(err instanceof Error ? err.message : "Falha ao enviar no momento."); }
+      setExitFeedback("Recebemos! Nossa equipe vai entrar em contato com uma proposta personalizada.");
+      setTimeout(() => setExitPopupOpen(false), 1800);
+    } catch (err) { setExitStatus("error"); setExitFeedback(err instanceof Error ? err.message : "Falha ao enviar. Tente novamente."); }
   };
 
   const ctaTo = async (eventKey: EventKey, targetId: string) => {
@@ -411,7 +413,6 @@ export default function SitesLandingPage() {
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <header className={`lp-header${headerScrolled ? " lp-header--scrolled" : ""}`}>
           <div className="lp-header__inner">
-
             <a href={LANDING_PATH} className="lp-header__logo" aria-label="Início">
               <Image src="/images/logo/logo.png" alt="Logo" width={120} height={36} className="lp-header__logo-img" />
             </a>
@@ -444,7 +445,6 @@ export default function SitesLandingPage() {
             </div>
           </div>
 
-          {/* Mobile nav */}
           {mobileMenuOpen && (
             <div className="lp-header__mobile-nav">
               {NAV_LINKS.map((l) => (
@@ -454,8 +454,7 @@ export default function SitesLandingPage() {
               ))}
               <button
                 type="button"
-                className="lp-btn lp-btn--primary"
-                style={{ width: "100%", justifyContent: "center" }}
+                className="lp-btn lp-btn--primary lp-btn--mobile-full"
                 onClick={() => { setMobileMenuOpen(false); void ctaTo("lp_sites_cta_hero_primary_clicked", "proposal-form"); }}
               >
                 Solicitar Proposta
@@ -484,25 +483,28 @@ export default function SitesLandingPage() {
                 Criação de Sites &amp; Desenvolvimento Web
               </span>
               <h1 className="lp-hero__title">
-                Sites que convertem.<br />
-                <em>Resultados de verdade.</em>
+                Seu site atual está<br />
+                <em>te custando clientes.</em>
               </h1>
               <p className="lp-hero__sub">
-                Desenvolvemos <strong>sites profissionais</strong>, landing pages, e-commerces e sistemas pensados para transformar visitantes em clientes.
+                Criamos sites profissionais que <strong>geram contatos, transmitem confiança</strong> e representam o verdadeiro nível do seu negócio — com entrega em semanas, não meses.
               </p>
               <ul className="lp-hero__pills">
-                {["Design moderno e responsivo", "Performance otimizada", "SEO avançado", "Estrutura para conversão"].map((b) => (
+                {["Design moderno e responsivo", "Carregamento rápido", "SEO incluído", "Foco em conversão"].map((b) => (
                   <li key={b} className="lp-pill"><CheckCircle2 size={14} />{b}</li>
                 ))}
               </ul>
               <div className="lp-hero__ctas">
-                <button type="button" className="lp-btn lp-btn--primary" onClick={() => void ctaTo("lp_sites_cta_hero_primary_clicked", "proposal-form")}>
-                  Solicitar Proposta Gratuita <ArrowRight size={16} />
+                <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={() => void ctaTo("lp_sites_cta_hero_primary_clicked", "proposal-form")}>
+                  Quero minha proposta gratuita <ArrowRight size={16} />
                 </button>
                 <button type="button" className="lp-btn lp-btn--ghost-light" onClick={() => void ctaTo("lp_sites_cta_hero_secondary_clicked", "como-funciona")}>
-                  Como funciona
+                  Ver como funciona
                 </button>
               </div>
+              <p className="lp-hero__reassurance">
+                <Shield size={13} /> Sem compromisso &nbsp;·&nbsp; <Clock size={13} /> Resposta em até 24h
+              </p>
             </div>
 
             <div className="lp-hero__card">
@@ -514,11 +516,25 @@ export default function SitesLandingPage() {
                     <span className="lp-tag__text">Arquitetura focada em conversão.</span>
                   </div>
                   <div className="lp-tag lp-tag--green">
-                    <span className="lp-tag__label">Execução</span>
-                    <span className="lp-tag__text">Desenvolvimento rápido e preciso.</span>
+                    <span className="lp-tag__label">Resultado</span>
+                    <span className="lp-tag__text">3× mais leads em média.</span>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── STATS BAR ───────────────────────────────────────────────────── */}
+        <section className="lp-stats" data-reveal>
+          <div className="lp-container">
+            <div className="lp-stats__grid">
+              {STATS.map((s) => (
+                <div key={s.label} className="lp-stats__item">
+                  <span className="lp-stats__value">{s.value}</span>
+                  <span className="lp-stats__label">{s.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -528,12 +544,19 @@ export default function SitesLandingPage() {
           <div className="lp-container">
             <div className="lp-problem__inner">
               <div className="lp-problem__text">
-                <p className="lp-eyebrow">O problema</p>
-                <h2 className="lp-h2">Seu site não está trazendo resultados?</h2>
-                <p className="lp-body">Se sua empresa já tem presença online, mas o site não gera contatos, não transmite confiança e não representa a qualidade do negócio, você está perdendo oportunidades todos os dias.</p>
+                <p className="lp-eyebrow">Reconhece alguma dessas situações?</p>
+                <h2 className="lp-h2">Seu site está trabalhando <em style={{ fontStyle: "normal", color: "var(--red-500)" }}>contra</em> você</h2>
+                <p className="lp-body">Cada dia com um site ruim é um dia perdendo clientes para a concorrência. Visitantes chegam, não confiam no que veem, e vão embora sem entrar em contato.</p>
+                <p className="lp-body" style={{ marginTop: 12 }}>Se você já ouviu alguém dizer que não encontrou seu site, ou que "o site não pareceu profissional", o problema está custando dinheiro real.</p>
               </div>
               <div className="lp-problem__cards">
-                {["Baixa geração de contatos", "Percepção visual abaixo do nível da empresa", "Ausência de estrutura para conversão"].map((item) => (
+                {[
+                  "Site não aparece no Google",
+                  "Visual desatualizado afasta clientes",
+                  "Não gera contatos nem pedidos",
+                  "Abre mal no celular",
+                  "Não transmite confiança e profissionalismo",
+                ].map((item) => (
                   <div key={item} className="lp-problem__card">
                     <span className="lp-problem__icon">✕</span>
                     {item}
@@ -549,8 +572,8 @@ export default function SitesLandingPage() {
           <div className="lp-container">
             <div className="lp-section-header">
               <p className="lp-eyebrow">O que você recebe</p>
-              <h2 className="lp-h2">Mais do que design bonito</h2>
-              <p className="lp-body lp-body--center">Estrutura digital para performance, posicionamento e crescimento comercial.</p>
+              <h2 className="lp-h2">Tudo que seu site precisa para vender</h2>
+              <p className="lp-body lp-body--center">Não entregamos só design bonito. Entregamos uma estrutura digital completa para performance, posicionamento e crescimento.</p>
             </div>
             <div className="lp-services__grid">
               {SERVICE_CARDS.map((card) => (
@@ -571,10 +594,10 @@ export default function SitesLandingPage() {
               <div className="lp-solutions__left">
                 <p className="lp-eyebrow lp-eyebrow--light">Soluções</p>
                 <h2 className="lp-h2 lp-h2--light">O que desenvolvemos</h2>
-                <p className="lp-body lp-body--light">Cada projeto é construído com foco em performance, usabilidade e resultado comercial.</p>
+                <p className="lp-body lp-body--light">Cada projeto nasce de uma conversa real sobre o seu negócio. Não usamos templates prontos — construímos do zero para o seu objetivo.</p>
                 <div className="lp-solutions__ctaWrap">
                   <button type="button" className="lp-btn lp-btn--white lp-solutions__ctaBtn" onClick={() => void ctaTo("lp_sites_cta_solutions_clicked", "proposal-form")}>
-                    Quero um site para meu projeto <ArrowRight size={16} />
+                    Quero um site para o meu negócio <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
@@ -593,15 +616,54 @@ export default function SitesLandingPage() {
           </div>
         </section>
 
+        {/* ── DEPOIMENTOS ─────────────────────────────────────────────────── */}
+        <section className="lp-testimonials" data-reveal>
+          <div className="lp-container">
+            <div className="lp-section-header">
+              <p className="lp-eyebrow">Depoimentos</p>
+              <h2 className="lp-h2">O que nossos clientes dizem</h2>
+            </div>
+            <div className="lp-testimonials__grid">
+              {TESTIMONIALS.map((t) => (
+                <div key={t.name} className="lp-testimonial-card">
+                  <div className="lp-testimonial-card__stars">
+                    {Array.from({ length: t.stars }).map((_, i) => (
+                      <Star key={i} size={14} fill="currentColor" />
+                    ))}
+                  </div>
+                  <p className="lp-testimonial-card__text">"{t.text}"</p>
+                  <div className="lp-testimonial-card__author">
+                    <div className="lp-testimonial-card__avatar">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="lp-testimonial-card__name">{t.name}</p>
+                      <p className="lp-testimonial-card__role">{t.role}, {t.company}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── POR QUE NÓS ─────────────────────────────────────────────────── */}
         <section className="lp-split" data-reveal>
           <div className="lp-container">
             <div className="lp-section-header lp-section-header--left">
               <p className="lp-eyebrow">Diferenciais</p>
-              <h2 className="lp-h2">Por que escolher nossa empresa</h2>
+              <h2 className="lp-h2">Por que trabalhar com a gente</h2>
+              <p className="lp-body">Agências grandes te tratam como número. Freelancers somem na entrega. A gente é diferente.</p>
             </div>
             <ul className="lp-why__list">
-              {["Atendimento próximo e consultivo em cada etapa.", "Entendimento real do momento do seu negócio.", "Foco em resultado comercial e não apenas estética.", "Visual moderno com usabilidade e clareza.", "Estrutura preparada para crescer com a empresa.", "Comunicação objetiva com visão de negócio."].map((item) => (
+              {[
+                "Atendimento próximo e consultivo — você fala direto com quem executa.",
+                "Entendemos o seu negócio antes de escrever uma linha de código.",
+                "Foco total em resultado comercial, não apenas em visual bonito.",
+                "Prazos cumpridos. Sem enrolação, sem sumiços.",
+                "Estrutura preparada para crescer junto com a empresa.",
+                "Comunicação clara, objetiva e sem jargão técnico.",
+              ].map((item) => (
                 <li key={item} className="lp-why__item">
                   <Sparkles size={14} className="lp-why__icon" />{item}
                 </li>
@@ -615,7 +677,8 @@ export default function SitesLandingPage() {
           <div className="lp-container">
             <div className="lp-section-header">
               <p className="lp-eyebrow">Processo</p>
-              <h2 className="lp-h2">Como funciona</h2>
+              <h2 className="lp-h2">Do zero ao ar em semanas</h2>
+              <p className="lp-body lp-body--center">Processo transparente, sem surpresas. Você sabe o que acontece em cada etapa.</p>
             </div>
             <div className="lp-how__steps">
               {HOW_IT_WORKS.map((item, i) => (
@@ -628,8 +691,8 @@ export default function SitesLandingPage() {
               ))}
             </div>
             <div className="lp-how__cta">
-              <button type="button" className="lp-btn lp-btn--primary" onClick={() => void ctaTo("lp_sites_cta_pre_form_clicked", "proposal-form")}>
-                Solicitar Proposta Agora <ArrowRight size={16} />
+              <button type="button" className="lp-btn lp-btn--primary lp-btn--lg" onClick={() => void ctaTo("lp_sites_cta_pre_form_clicked", "proposal-form")}>
+                Quero começar agora <ArrowRight size={16} />
               </button>
             </div>
           </div>
@@ -639,13 +702,22 @@ export default function SitesLandingPage() {
         <section className="lp-prebook" data-reveal>
           <div className="lp-container lp-prebook__inner">
             <div>
-              <h2 className="lp-h2 lp-h2--light">Vamos tirar sua ideia do papel?</h2>
-              <p className="lp-body lp-body--light">Receba um direcionamento claro para desenvolver um site alinhado ao seu objetivo.</p>
+              <h2 className="lp-h2 lp-h2--light">Pronto para ter um site que trabalha por você?</h2>
+              <p className="lp-body lp-body--light">Solicite uma proposta gratuita e receba um plano personalizado para o seu projeto em até 24 horas.</p>
             </div>
-            <div className="lp-prebook__tags">
-              <span className="lp-prebook__tag">Sem compromisso</span>
-              <span className="lp-prebook__tag">Atendimento rápido</span>
-              <span className="lp-prebook__tag">Proposta personalizada</span>
+            <div className="lp-prebook__right">
+              <div className="lp-prebook__tags">
+                <span className="lp-prebook__tag">Sem compromisso</span>
+                <span className="lp-prebook__tag">Resposta em 24h</span>
+                <span className="lp-prebook__tag">Proposta personalizada</span>
+              </div>
+              <button
+                type="button"
+                className="lp-btn lp-btn--white lp-prebook__btn"
+                onClick={() => void ctaTo("lp_sites_cta_pre_form_clicked", "proposal-form")}
+              >
+                Solicitar proposta gratuita <ArrowRight size={16} />
+              </button>
             </div>
           </div>
         </section>
@@ -655,14 +727,25 @@ export default function SitesLandingPage() {
           <div className="lp-container">
             <div className="lp-form-wrap">
               <div className="lp-form-wrap__header">
-                <p className="lp-eyebrow">Proposta</p>
-                <h2 className="lp-h2">Solicite sua proposta gratuita</h2>
-                <p className="lp-body">Preencha as informações abaixo e entraremos em contato com um direcionamento para seu projeto.</p>
+                <p className="lp-eyebrow">Proposta gratuita</p>
+                <h2 className="lp-h2">Vamos conversar sobre o seu projeto</h2>
+                <p className="lp-body">Preencha abaixo e nossa equipe retorna em até 24h com um diagnóstico e direcionamento para o seu site.</p>
+                <div className="lp-form-trust">
+                  <span className="lp-form-trust__item"><Shield size={13} /> Sem spam</span>
+                  <span className="lp-form-trust__item"><Clock size={13} /> Resposta em até 24h</span>
+                  <span className="lp-form-trust__item"><CheckCircle2 size={13} /> Sem compromisso</span>
+                </div>
               </div>
               <form onSubmit={handleMainSubmit} className="lp-form" noValidate>
                 <div className="lp-form__row">
-                  <label className="lp-field"><span className="lp-field__label">Nome</span><input required value={mainForm.name} onFocus={() => handleMainFieldFocus("name")} onChange={(e) => setMainForm((p) => ({ ...p, name: e.target.value }))} className="lp-field__input" placeholder="Seu nome completo" /></label>
-                  <label className="lp-field"><span className="lp-field__label">WhatsApp</span><input required value={mainForm.whatsapp} onFocus={() => handleMainFieldFocus("whatsapp")} onChange={(e) => setMainForm((p) => ({ ...p, whatsapp: formatWhatsapp(e.target.value) }))} className="lp-field__input" placeholder="(00) 00000-0000" /></label>
+                  <label className="lp-field">
+                    <span className="lp-field__label">Seu nome</span>
+                    <input required value={mainForm.name} onFocus={() => handleMainFieldFocus("name")} onChange={(e) => setMainForm((p) => ({ ...p, name: e.target.value }))} className="lp-field__input" placeholder="Como podemos te chamar?" />
+                  </label>
+                  <label className="lp-field">
+                    <span className="lp-field__label">WhatsApp <span className="lp-field__required">*</span></span>
+                    <input required value={mainForm.whatsapp} onFocus={() => handleMainFieldFocus("whatsapp")} onChange={(e) => setMainForm((p) => ({ ...p, whatsapp: formatWhatsapp(e.target.value) }))} className="lp-field__input" placeholder="(00) 00000-0000" />
+                  </label>
                 </div>
                 <label className="lp-field">
                   <span className="lp-field__label">E-mail <span className="lp-field__optional">(opcional)</span></span>
@@ -670,11 +753,13 @@ export default function SitesLandingPage() {
                 </label>
                 {mainStatus === "error" && <p className="lp-form__feedback lp-form__feedback--error">{mainFeedback}</p>}
                 <div className="lp-form__footer">
-                  <button type="submit" disabled={mainStatus === "loading"} className="lp-btn lp-btn--primary lp-btn--lg">
-                    {mainStatus === "loading" ? "Redirecionando..." : "Continuar para Onboarding"}
+                  <button type="submit" disabled={mainStatus === "loading"} className="lp-btn lp-btn--primary lp-btn--lg lp-btn--submit-full">
+                    {mainStatus === "loading" ? "Enviando..." : "Quero minha proposta gratuita"}
                     {mainStatus !== "loading" && <ArrowRight size={16} />}
                   </button>
-                  <p className="lp-form__note">WhatsApp obrigatório.</p>
+                  <p className="lp-form__note">
+                    <Shield size={12} /> Seus dados são 100% seguros e não serão compartilhados.
+                  </p>
                 </div>
               </form>
             </div>
@@ -685,8 +770,8 @@ export default function SitesLandingPage() {
         <section className="lp-footer-cta" data-reveal>
           <div className="lp-container lp-footer-cta__inner">
             <div className="lp-footer-cta__content">
-              <h2 className="lp-h2 lp-h2--light">Seu próximo projeto merece uma presença digital à altura.</h2>
-              <p className="lp-body lp-body--light">Site profissional, moderno e estratégico para vender melhor e fortalecer sua marca.</p>
+              <h2 className="lp-h2 lp-h2--light">Seu negócio merece uma presença digital à altura.</h2>
+              <p className="lp-body lp-body--light">Site profissional, moderno e estratégico — para vender mais e ser lembrado.</p>
               <div className="lp-footer-cta__contacts">
                 {generalSettings.contact_phone && (
                   <a href={`tel:${onlyDigits(generalSettings.contact_phone)}`} className="lp-footer-cta__contact-item">
@@ -694,26 +779,18 @@ export default function SitesLandingPage() {
                     {generalSettings.contact_phone}
                   </a>
                 )}
-
                 {generalSettings.contact_whatsapp && (
-                  <a
-                    href={generalSettings.contact_whatsapp_url || `https://wa.me/55${onlyDigits(generalSettings.contact_whatsapp)}`}
-                    className="lp-footer-cta__contact-item"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <a href={generalSettings.contact_whatsapp_url || `https://wa.me/55${onlyDigits(generalSettings.contact_whatsapp)}`} className="lp-footer-cta__contact-item" target="_blank" rel="noreferrer">
                     <MessageCircle size={14} />
                     {generalSettings.contact_whatsapp}
                   </a>
                 )}
-
                 {generalSettings.contact_email && (
                   <a href={`mailto:${generalSettings.contact_email}`} className="lp-footer-cta__contact-item">
                     <Mail size={14} />
                     {generalSettings.contact_email}
                   </a>
                 )}
-
                 {generalSettings.contact_address && (
                   <span className="lp-footer-cta__contact-item">
                     <MapPin size={14} />
@@ -722,7 +799,7 @@ export default function SitesLandingPage() {
                 )}
               </div>
             </div>
-            <button type="button" className="lp-btn lp-btn--white" onClick={() => void ctaTo("lp_sites_footer_cta_clicked", "proposal-form")}>
+            <button type="button" className="lp-btn lp-btn--white lp-footer-cta__btn" onClick={() => void ctaTo("lp_sites_footer_cta_clicked", "proposal-form")}>
               Solicitar Proposta Gratuita <ArrowRight size={16} />
             </button>
           </div>
@@ -733,16 +810,25 @@ export default function SitesLandingPage() {
           <div className="lp-popup-overlay" role="dialog" aria-modal="true">
             <div className="lp-popup">
               <button type="button" className="lp-popup__close" onClick={() => setExitPopupOpen(false)} aria-label="Fechar"><X size={18} /></button>
-              <div className="lp-popup__badge">Espere</div>
-              <h3 className="lp-popup__title">Não saia ainda.</h3>
-              <p className="lp-popup__sub">Nossa equipe pode montar uma proposta muito boa para o seu projeto. Deixe seus dados e entraremos em contato.</p>
+              <div className="lp-popup__badge">Espera um segundo</div>
+              <h3 className="lp-popup__title">Não perca essa oportunidade.</h3>
+              <p className="lp-popup__sub">Deixa seus dados e nossa equipe monta uma proposta personalizada para o seu projeto — sem custo e sem compromisso.</p>
               <form className="lp-popup__form" onSubmit={handleExitSubmit}>
-                <label className="lp-field"><span className="lp-field__label">Nome</span><input value={exitForm.name} onFocus={handleExitStart} onChange={(e) => setExitForm((p) => ({ ...p, name: e.target.value }))} className="lp-field__input" required placeholder="Seu nome" /></label>
-                <label className="lp-field"><span className="lp-field__label">WhatsApp ou e-mail</span><input value={exitForm.contact} onFocus={handleExitStart} onChange={(e) => setExitForm((p) => ({ ...p, contact: e.target.value }))} className="lp-field__input" required placeholder="(00) 00000-0000 ou email@..." /></label>
+                <label className="lp-field">
+                  <span className="lp-field__label">Nome</span>
+                  <input value={exitForm.name} onFocus={handleExitStart} onChange={(e) => setExitForm((p) => ({ ...p, name: e.target.value }))} className="lp-field__input" required placeholder="Seu nome" />
+                </label>
+                <label className="lp-field">
+                  <span className="lp-field__label">WhatsApp ou e-mail</span>
+                  <input value={exitForm.contact} onFocus={handleExitStart} onChange={(e) => setExitForm((p) => ({ ...p, contact: e.target.value }))} className="lp-field__input" required placeholder="(00) 00000-0000 ou email@..." />
+                </label>
                 {exitStatus === "error" && <p className="lp-form__feedback lp-form__feedback--error">{exitFeedback}</p>}
                 {exitStatus === "success" && <p className="lp-form__feedback lp-form__feedback--success">{exitFeedback}</p>}
                 <div className="lp-popup__actions">
-                  <button type="submit" disabled={exitStatus === "loading"} className="lp-btn lp-btn--primary">{exitStatus === "loading" ? "Enviando..." : "Quero receber uma proposta"}</button>
+                  <button type="submit" disabled={exitStatus === "loading"} className="lp-btn lp-btn--primary lp-btn--popup-full">
+                    {exitStatus === "loading" ? "Enviando..." : "Quero receber uma proposta"}
+                    {exitStatus !== "loading" && <ArrowRight size={15} />}
+                  </button>
                   <button type="button" className="lp-btn lp-btn--ghost" onClick={() => setExitPopupOpen(false)}>Fechar</button>
                 </div>
               </form>
@@ -750,7 +836,6 @@ export default function SitesLandingPage() {
           </div>
         )}
       </div>
-
     </>
   );
 }

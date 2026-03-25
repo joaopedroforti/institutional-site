@@ -51,7 +51,11 @@ php artisan view:cache
 
 ### Variáveis de ambiente
 Use como base `admin/.env.example`:
-- `VITE_API_URL=https://api.seudominio.com`
+- `VITE_BACKEND_URL=https://api.seudominio.com`
+- `VITE_API_URL=https://api.seudominio.com/api` (opcional, sobrescreve `VITE_BACKEND_URL + /api`)
+- `VITE_MAIN_SITE_URL=https://seudominio.com`
+- `VITE_ADMIN_URL=https://admin.seudominio.com`
+- `VITE_WS_URL=wss://ws.seudominio.com` (opcional)
 
 ## 3) Main Site (Next.js)
 
@@ -61,7 +65,11 @@ Use como base `admin/.env.example`:
 
 ### Variáveis de ambiente
 Use como base `main-site/.env.example`:
-- `NEXT_PUBLIC_API_BASE_URL=https://api.seudominio.com/api`
+- `NEXT_PUBLIC_BACKEND_URL=https://api.seudominio.com`
+- `NEXT_PUBLIC_API_BASE_URL=https://api.seudominio.com/api` (opcional, sobrescreve `NEXT_PUBLIC_BACKEND_URL + /api`)
+- `NEXT_PUBLIC_MAIN_SITE_URL=https://seudominio.com`
+- `NEXT_PUBLIC_ADMIN_URL=https://admin.seudominio.com`
+- `NEXT_PUBLIC_WS_URL=wss://ws.seudominio.com` (opcional)
 
 ## Observações
 - Configure domínio/subdomínio por serviço no EasyPanel.

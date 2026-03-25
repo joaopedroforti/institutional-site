@@ -176,6 +176,8 @@ export default function WhatsAppPage() {
   const hasOlderMapRef = useRef<Record<number, boolean>>({});
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const pendingConversationQueryRef = useRef<number | null>(null);
+  const conversationRequestAbortRef = useRef<AbortController | null>(null);
+  const conversationRequestSeqRef = useRef(0);
 
   const conversationsCacheKey = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase() || "__empty__";
@@ -417,6 +419,12 @@ export default function WhatsAppPage() {
         return;
       }
 
+      conversationRequestAbortRef.current?.abort();
+      const controller = new AbortController();
+      conversationRequestAbortRef.current = controller;
+      const requestSeq = conversationRequestSeqRef.current + 1;
+      conversationRequestSeqRef.current = requestSeq;
+
       setLoadingMessages(true);
       try {
         const cached = messageCacheRef.current[conversationId] ?? [];
@@ -426,9 +434,17 @@ export default function WhatsAppPage() {
 
         const response = await apiRequest<WhatsAppConversationPayloadResponse>(
           `/api/admin/whatsapp/conversations/${conversationId}`,
-          {},
+          { signal: controller.signal },
           token,
         );
+
+        if (
+          controller.signal.aborted ||
+          requestSeq !== conversationRequestSeqRef.current ||
+          selectedConversationIdRef.current !== conversationId
+        ) {
+          return;
+        }
 
         setSelectedConversation({
           ...response.data,
@@ -453,9 +469,15 @@ export default function WhatsAppPage() {
         const maxId = mergedMessages.reduce((max, current) => Math.max(max, current.id), 0);
         latestMessageIdRef.current = maxId;
       } catch (requestError) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
         setError(requestError instanceof ApiError ? requestError.message : "Falha ao carregar mensagens.");
       } finally {
-        setLoadingMessages(false);
+        if (requestSeq === conversationRequestSeqRef.current) {
+          setLoadingMessages(false);
+        }
       }
     },
     [token],
@@ -586,7 +608,15 @@ export default function WhatsAppPage() {
       return;
     }
 
+    let inFlight = false;
+    let activeController: AbortController | null = null;
+
     const interval = window.setInterval(() => {
+      if (inFlight) {
+        return;
+      }
+
+      inFlight = true;
       const selectedId = selectedConversationIdRef.current;
       const params = new URLSearchParams();
       params.set("after_message_id", String(latestMessageIdRef.current));
@@ -594,7 +624,12 @@ export default function WhatsAppPage() {
         params.set("conversation_id", String(selectedId));
       }
 
-      void apiRequest<RealtimeUpdatesResponse>(`/api/admin/whatsapp/realtime/updates?${params.toString()}`, {}, token)
+      activeController = new AbortController();
+      void apiRequest<RealtimeUpdatesResponse>(
+        `/api/admin/whatsapp/realtime/updates?${params.toString()}`,
+        { signal: activeController.signal },
+        token,
+      )
         .then((response) => {
           const incomingConversations = response.data.conversations ?? [];
           if (incomingConversations.length > 0) {
@@ -640,11 +675,24 @@ export default function WhatsAppPage() {
         })
         .catch(() => {
           // silencioso no polling
+        })
+        .finally(() => {
+          inFlight = false;
         });
     }, 7000);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearInterval(interval);
+      activeController?.abort();
+    };
   }, [token]);
+
+  useEffect(
+    () => () => {
+      conversationRequestAbortRef.current?.abort();
+    },
+    [],
+  );
 
   const sendText = useCallback(
     async (text: string) => {

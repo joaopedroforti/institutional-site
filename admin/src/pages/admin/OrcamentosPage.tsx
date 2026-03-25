@@ -3,6 +3,7 @@ import { Bell, CheckCircle2, ExternalLink, FileText, Mail, Phone, UserCircle2, S
 import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
+import { withMainSiteUrl } from "../../config/runtime";
 import type { BudgetRecord, BudgetsResponse } from "../../types/admin";
 import { Modal } from "../../components/ui/modal";
 import LoadingState from "../../components/common/LoadingState";
@@ -728,7 +729,7 @@ export default function OrcamentosPage() {
                     <td className="px-3 py-3">
                       {budget.slug ? (
                         <a
-                          href={`http://localhost:3000/proposta/${budget.slug}?internal=1`}
+                          href={withMainSiteUrl(`/proposta/${budget.slug}?internal=1`)}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
@@ -1301,7 +1302,7 @@ export default function OrcamentosPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {selectedBudget.slug ? (
                     <a
-                      href={`http://localhost:3000/proposta/${selectedBudget.slug}?internal=1`}
+                      href={withMainSiteUrl(`/proposta/${selectedBudget.slug}?internal=1`)}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"

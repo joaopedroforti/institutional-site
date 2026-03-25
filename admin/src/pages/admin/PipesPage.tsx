@@ -28,6 +28,7 @@ import { useLocation, useNavigate } from "react-router";
 import PageShell from "./PageShell";
 import { useAuth } from "../../context/AuthContext";
 import { ApiError, apiRequest } from "../../lib/api";
+import { withMainSiteUrl } from "../../config/runtime";
 import LoadingState from "../../components/common/LoadingState";
 import AlertModal from "../../components/common/AlertModal";
 import type {
@@ -304,13 +305,6 @@ function detectContactTags(
   return Array.from(tags).slice(0, 4);
 }
 
-function buildOnboardingUrl(baseUrl: string): string {
-  const normalized = baseUrl.replace(/\/$/, "");
-  const url = new URL("/onboarding", normalized);
-
-  return url.toString();
-}
-
 function extractUserOptions(details: Record<string, unknown> | null, currentUserName?: string, currentUserId?: number): UserOption[] {
   const map = new Map<number, string>();
 
@@ -427,6 +421,9 @@ export default function PipesPage() {
   const [savingTag, setSavingTag] = useState(false);
   const [sourceMappingRules, setSourceMappingRules] = useState<SourceTagMappingRule[]>([]);
   const leadQueryToOpenRef = useRef<number | null>(null);
+  const selectedLeadIdRef = useRef<number | null>(null);
+  const whatsappConversationAbortRef = useRef<AbortController | null>(null);
+  const whatsappConversationRequestSeqRef = useRef(0);
 
   const userOptions = useMemo(
     () => extractUserOptions(leadDetails, user?.name, user?.id),
@@ -449,6 +446,10 @@ export default function PipesPage() {
       );
     };
   }, [selectedLead, activeTab]);
+
+  useEffect(() => {
+    selectedLeadIdRef.current = selectedLead?.id ?? null;
+  }, [selectedLead?.id]);
 
   const loadBase = async () => {
     if (!token) {
@@ -632,7 +633,60 @@ export default function PipesPage() {
     }
   };
 
-  const mainSiteBaseUrl = import.meta.env.VITE_MAIN_SITE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+  const applyOptimisticLeadMove = (
+    boardColumns: KanbanColumn[],
+    lead: KanbanLead,
+    targetColumn: KanbanColumn,
+    targetIndex: number,
+  ): KanbanColumn[] => {
+    const cloned = boardColumns.map((column) => ({
+      ...column,
+      contacts: [...(column.contacts ?? [])],
+    }));
+
+    const sourceColumnIndex = cloned.findIndex((column) => (column.contacts ?? []).some((item) => item.id === lead.id));
+    if (sourceColumnIndex < 0) {
+      return boardColumns;
+    }
+
+    const sourceColumn = cloned[sourceColumnIndex];
+    const sourceContacts = [...(sourceColumn.contacts ?? [])];
+    const sourceLeadIndex = sourceContacts.findIndex((item) => item.id === lead.id);
+    if (sourceLeadIndex < 0) {
+      return boardColumns;
+    }
+
+    const [movingLead] = sourceContacts.splice(sourceLeadIndex, 1);
+    sourceColumn.contacts = sourceContacts;
+
+    const targetColumnIndex = cloned.findIndex((column) => column.id === targetColumn.id);
+    if (targetColumnIndex < 0) {
+      return boardColumns;
+    }
+
+    const targetContacts = [...(cloned[targetColumnIndex].contacts ?? [])];
+    const normalizedIndex = Math.max(0, Math.min(targetIndex, targetContacts.length));
+    targetContacts.splice(normalizedIndex, 0, {
+      ...movingLead,
+      status: targetColumn.slug,
+      pipeline: targetColumn.pipeline ?? movingLead.pipeline,
+    });
+
+    const normalizedTargetContacts = targetContacts.map((item, index) => ({
+      ...item,
+      lead_order: index,
+    }));
+    cloned[targetColumnIndex].contacts = normalizedTargetContacts;
+
+    if (sourceColumnIndex !== targetColumnIndex) {
+      cloned[sourceColumnIndex].contacts = (cloned[sourceColumnIndex].contacts ?? []).map((item, index) => ({
+        ...item,
+        lead_order: index,
+      }));
+    }
+
+    return cloned;
+  };
 
   const performMove = async (lead: KanbanLead, targetColumn: KanbanColumn, leadOrder = 9999) => {
     if (!token) {
@@ -640,6 +694,12 @@ export default function PipesPage() {
     }
 
     setSavingMove(true);
+    const snapshotColumns = columns.map((column) => ({
+      ...column,
+      contacts: [...(column.contacts ?? [])],
+    }));
+    setColumns((prev) => applyOptimisticLeadMove(prev, lead, targetColumn, leadOrder));
+
     try {
       await apiRequest(
         `/api/admin/kanban/contacts/${lead.id}/move`,
@@ -647,7 +707,7 @@ export default function PipesPage() {
           method: "PATCH",
           body: JSON.stringify({
             lead_kanban_column_id: targetColumn.id,
-            lead_order: leadOrder,
+          lead_order: leadOrder,
           }),
         },
         token,
@@ -660,11 +720,12 @@ export default function PipesPage() {
       if (pipeline === "comercial" && targetColumn.slug === "onboarding") {
         setCopiedOnboardingUrl(false);
         setOnboardingPrompt({
-          url: buildOnboardingUrl(mainSiteBaseUrl),
+          url: withMainSiteUrl("/onboarding"),
           leadName: lead.name,
         });
       }
     } catch (requestError) {
+      setColumns(snapshotColumns);
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel mover card.");
     } finally {
       setSavingMove(false);
@@ -778,13 +839,19 @@ export default function PipesPage() {
     }
   };
 
-  const handleDropToColumn = async (targetColumn: KanbanColumn, targetIndex?: number) => {
-    if (!draggedLead || savingMove) {
+  const handleDropToColumn = async (targetColumn: KanbanColumn, targetIndex?: number, droppedLeadId?: number) => {
+    const fallbackLead =
+      typeof droppedLeadId === "number" && Number.isFinite(droppedLeadId)
+        ? columns.flatMap((column) => column.contacts ?? []).find((lead) => lead.id === droppedLeadId) ?? null
+        : null;
+    const movingLead = draggedLead ?? fallbackLead;
+
+    if (!movingLead || savingMove) {
       return;
     }
 
-    const sourceColumn = columns.find((column) => (column.contacts ?? []).some((lead) => lead.id === draggedLead.id));
-    const sourceIndex = sourceColumn?.contacts.findIndex((lead) => lead.id === draggedLead.id) ?? -1;
+    const sourceColumn = columns.find((column) => (column.contacts ?? []).some((lead) => lead.id === movingLead.id));
+    const sourceIndex = sourceColumn?.contacts.findIndex((lead) => lead.id === movingLead.id) ?? -1;
 
     let nextOrder = typeof targetIndex === "number" ? targetIndex : targetColumn.contacts.length;
     if (sourceColumn && sourceColumn.id === targetColumn.id && sourceIndex >= 0 && sourceIndex < nextOrder) {
@@ -798,7 +865,7 @@ export default function PipesPage() {
       return;
     }
 
-    await performMove(draggedLead, targetColumn, Math.max(0, nextOrder));
+    await performMove(movingLead, targetColumn, Math.max(0, nextOrder));
     setDraggedLead(null);
     setDragOverColumnId(null);
     setDragOverIndex(null);
@@ -876,14 +943,29 @@ export default function PipesPage() {
       return;
     }
 
+    whatsappConversationAbortRef.current?.abort();
+    const controller = new AbortController();
+    whatsappConversationAbortRef.current = controller;
+    const requestSeq = whatsappConversationRequestSeqRef.current + 1;
+    whatsappConversationRequestSeqRef.current = requestSeq;
+    const leadId = selectedLead.id;
+
     setWhatsappLoading(true);
 
     try {
       const leadConversation = await apiRequest<{ data: WhatsAppConversationRecord | null }>(
         `/api/admin/whatsapp/leads/${selectedLead.id}/conversation`,
-        {},
+        { signal: controller.signal },
         token,
       );
+
+      if (
+        controller.signal.aborted ||
+        requestSeq !== whatsappConversationRequestSeqRef.current ||
+        selectedLeadIdRef.current !== leadId
+      ) {
+        return;
+      }
 
       if (!leadConversation.data) {
         setWhatsappConversation(null);
@@ -893,16 +975,30 @@ export default function PipesPage() {
 
       const payload = await apiRequest<WhatsAppConversationPayloadResponse>(
         `/api/admin/whatsapp/conversations/${leadConversation.data.id}`,
-        {},
+        { signal: controller.signal },
         token,
       );
+
+      if (
+        controller.signal.aborted ||
+        requestSeq !== whatsappConversationRequestSeqRef.current ||
+        selectedLeadIdRef.current !== leadId
+      ) {
+        return;
+      }
 
       setWhatsappConversation(payload.data);
       setWhatsappMessages(payload.messages);
     } catch (requestError) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel carregar conversa do WhatsApp.");
     } finally {
-      setWhatsappLoading(false);
+      if (requestSeq === whatsappConversationRequestSeqRef.current) {
+        setWhatsappLoading(false);
+      }
     }
   };
 
@@ -1294,7 +1390,7 @@ export default function PipesPage() {
     const value = metadata.proposal_slug;
     return value ? String(value) : "";
   }, [leadDetails]);
-  const proposalUrl = proposalSlug ? `${mainSiteBaseUrl.replace(/\/$/, "")}/proposta/${proposalSlug}` : "";
+  const proposalUrl = proposalSlug ? withMainSiteUrl(`/proposta/${proposalSlug}`) : "";
   const modalContentClass = activeTab === "whatsapp" ? "h-full overflow-hidden p-3" : "h-full overflow-y-auto p-3";
   const onboardingMeta = useMemo(() => {
     const metadata = (leadDetails?.metadata as Record<string, unknown> | undefined) ?? {};
@@ -1448,10 +1544,19 @@ export default function PipesPage() {
       return;
     }
 
+    let inFlight = false;
+    let activeController: AbortController | null = null;
+
     const timer = window.setInterval(() => {
+      if (inFlight) {
+        return;
+      }
+
+      inFlight = true;
+      activeController = new AbortController();
       void apiRequest<{ data: WhatsAppMessageRecord[] }>(
         `/api/admin/whatsapp/conversations/${whatsappConversation.id}/messages?per_page=120`,
-        {},
+        { signal: activeController.signal },
         token,
       )
         .then((response) => {
@@ -1464,11 +1569,24 @@ export default function PipesPage() {
         })
         .catch(() => {
           // polling silencioso
+        })
+        .finally(() => {
+          inFlight = false;
         });
     }, 7000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      activeController?.abort();
+    };
   }, [token, activeTab, whatsappConversation?.id]);
+
+  useEffect(
+    () => () => {
+      whatsappConversationAbortRef.current?.abort();
+    },
+    [],
+  );
 
   return (
     <PageShell>
@@ -1576,7 +1694,12 @@ export default function PipesPage() {
                 }}
                 onDrop={(event) => {
                   event.preventDefault();
-                  void handleDropToColumn(column, dragOverColumnId === column.id ? (dragOverIndex ?? column.contacts.length) : column.contacts.length);
+                  const droppedLeadId = Number(event.dataTransfer.getData("text/plain"));
+                  void handleDropToColumn(
+                    column,
+                    dragOverColumnId === column.id ? (dragOverIndex ?? column.contacts.length) : column.contacts.length,
+                    Number.isFinite(droppedLeadId) ? droppedLeadId : undefined,
+                  );
                 }}
                 onDragLeave={(event) => {
                   if (event.currentTarget.contains(event.relatedTarget as Node)) {
@@ -1661,7 +1784,8 @@ export default function PipesPage() {
                           onDrop={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            void handleDropToColumn(column, index);
+                            const droppedLeadId = Number(event.dataTransfer.getData("text/plain"));
+                            void handleDropToColumn(column, index, Number.isFinite(droppedLeadId) ? droppedLeadId : undefined);
                           }}
                           onClick={() => {
                             void openLeadDetails(lead);

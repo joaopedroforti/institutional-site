@@ -135,14 +135,23 @@ export default function GlobalWhatsAppNotifier() {
     }
 
     let active = true;
+    let inFlight = false;
+    let activeController: AbortController | null = null;
 
     const poll = async () => {
+      if (inFlight) {
+        return;
+      }
+
+      inFlight = true;
+      activeController = new AbortController();
+
       try {
         const params = new URLSearchParams();
         params.set("after_message_id", String(afterMessageIdRef.current));
         const response = await apiRequest<RealtimeUpdatesResponse>(
           `/api/admin/whatsapp/realtime/updates?${params.toString()}`,
-          {},
+          { signal: activeController.signal },
           token,
         );
 
@@ -195,6 +204,8 @@ export default function GlobalWhatsAppNotifier() {
         if (error instanceof ApiError && error.status === 401) {
           setToast(null);
         }
+      } finally {
+        inFlight = false;
       }
     };
 
@@ -205,6 +216,7 @@ export default function GlobalWhatsAppNotifier() {
 
     return () => {
       active = false;
+      activeController?.abort();
       window.clearInterval(timer);
     };
   }, [token, shouldSuppress]);

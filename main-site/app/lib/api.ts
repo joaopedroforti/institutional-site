@@ -1,6 +1,6 @@
-const fallbackApiBaseUrl = "http://localhost:8000/api";
+import { runtimeConfig } from "./runtime-config";
 
-export const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? fallbackApiBaseUrl).replace(/\/$/, "");
+export const apiBaseUrl = runtimeConfig.backendApiUrl;
 
 export class ApiError extends Error {
   status: number | null;
@@ -18,6 +18,12 @@ type ApiOptions = RequestInit & {
 };
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
+  if (!apiBaseUrl) {
+    throw new ApiError(
+      "URL do backend nao configurada. Defina NEXT_PUBLIC_BACKEND_URL ou NEXT_PUBLIC_API_BASE_URL.",
+    );
+  }
+
   const headers = new Headers(options.headers);
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? 20000;

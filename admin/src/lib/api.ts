@@ -1,5 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") ?? "";
-const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS ?? 30000);
+import { runtimeConfig } from "../config/runtime";
+
+const API_BASE_URL = runtimeConfig.apiBaseUrl;
+const API_TIMEOUT_MS = runtimeConfig.apiTimeoutMs;
 
 export type ApiErrorPayload = {
   message: string;
