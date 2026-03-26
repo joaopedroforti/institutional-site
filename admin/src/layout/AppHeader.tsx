@@ -19,6 +19,7 @@ const TITLES: Record<string, string> = {
   "/admin/configuracoes/precificacao": "Precificacao",
   "/admin/configuracoes/whatsapp": "WhatsApp",
   "/admin/configuracoes/integracoes": "Integracoes",
+  "/admin/configuracoes/integracoes/meta": "Meta Pixel",
   "/admin/configuracoes/regras-score": "Regras de Score",
   "/admin/configuracoes/origens-tags": "Mapeamento de Origem e Tags",
 };

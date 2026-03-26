@@ -1,7 +1,18 @@
 <?php
 
 return [
-    'base_url' => rtrim((string) env('EVOLUTION_API_URL', ''), '/'),
+    'base_url' => (static function (): string {
+        $raw = trim((string) env('EVOLUTION_API_URL', ''));
+        if ($raw === '') {
+            return '';
+        }
+
+        if (! preg_match('/^https?:\/\//i', $raw)) {
+            $raw = 'https://'.$raw;
+        }
+
+        return rtrim($raw, '/');
+    })(),
     'api_key' => (string) env('EVOLUTION_API_KEY', ''),
     'instance' => (string) env('EVOLUTION_INSTANCE', 'FortiCorp'),
     'webhook_url' => (string) env('EVOLUTION_WEBHOOK_URL', ''),

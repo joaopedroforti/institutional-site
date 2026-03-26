@@ -22,6 +22,20 @@ class CommercialSettingsController extends Controller
     ];
     private const SCORE_RULES_KEY = 'lead_score_rules';
     private const SOURCE_MAPPINGS_KEY = 'lead_source_mappings';
+    private const INTEGRATIONS_KEY = 'integrations_settings';
+    private const META_ADVANCED_MATCHING_FIELDS = [
+        'city_state_zip',
+        'country',
+        'birth_date',
+        'email',
+        'external_id',
+        'gender',
+        'first_name_last_name',
+        'phone',
+    ];
+    private const META_PRIVATE_FIELDS = [
+        'access_token',
+    ];
 
     public function publicGeneralSettings(): JsonResponse
     {
@@ -34,6 +48,20 @@ class CommercialSettingsController extends Controller
     {
         return response()->json([
             'data' => $this->readGeneralSettings(),
+        ]);
+    }
+
+    public function publicIntegrations(): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->sanitizePublicIntegrations($this->readIntegrationsSettings()),
+        ]);
+    }
+
+    public function integrations(): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->readIntegrationsSettings(),
         ]);
     }
 
@@ -70,6 +98,53 @@ class CommercialSettingsController extends Controller
         return response()->json([
             'message' => 'Configuracoes gerais atualizadas.',
             'data' => $this->readGeneralSettings(),
+        ]);
+    }
+
+    public function updateIntegrations(Request $request): JsonResponse
+    {
+        if (! Schema::hasTable('general_settings')) {
+            return response()->json([
+                'message' => 'Tabela de configuracoes gerais ainda nao disponivel.',
+            ], 422);
+        }
+
+        $payload = $request->validate([
+            'meta_pixel' => ['required', 'array'],
+            'meta_pixel.enabled' => ['required', 'boolean'],
+            'meta_pixel.pixel_id' => ['nullable', 'string', 'max:80'],
+            'meta_pixel.automatic_advanced_matching' => ['required', 'boolean'],
+            'meta_pixel.advanced_matching_fields' => ['required', 'array'],
+            'meta_pixel.conversions_api_enabled' => ['required', 'boolean'],
+            'meta_pixel.access_token' => ['nullable', 'string', 'max:600'],
+            'meta_pixel.api_version' => ['nullable', 'string', 'max:16'],
+            'meta_pixel.test_event_code' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $fields = [];
+        $rawFields = $payload['meta_pixel']['advanced_matching_fields'] ?? [];
+        foreach (self::META_ADVANCED_MATCHING_FIELDS as $key) {
+            $fields[$key] = (bool) ($rawFields[$key] ?? false);
+        }
+
+        $normalized = [
+            'meta_pixel' => [
+                'enabled' => (bool) ($payload['meta_pixel']['enabled'] ?? false),
+                'pixel_id' => trim((string) ($payload['meta_pixel']['pixel_id'] ?? '')),
+                'automatic_advanced_matching' => (bool) ($payload['meta_pixel']['automatic_advanced_matching'] ?? false),
+                'advanced_matching_fields' => $fields,
+                'conversions_api_enabled' => (bool) ($payload['meta_pixel']['conversions_api_enabled'] ?? false),
+                'access_token' => trim((string) ($payload['meta_pixel']['access_token'] ?? '')),
+                'api_version' => trim((string) ($payload['meta_pixel']['api_version'] ?? 'v22.0')) ?: 'v22.0',
+                'test_event_code' => trim((string) ($payload['meta_pixel']['test_event_code'] ?? '')),
+            ],
+        ];
+
+        $saved = $this->writeJsonSetting(self::INTEGRATIONS_KEY, $normalized);
+
+        return response()->json([
+            'message' => 'Integracoes atualizadas.',
+            'data' => $saved,
         ]);
     }
 
@@ -349,6 +424,50 @@ class CommercialSettingsController extends Controller
                 ['contains' => 'contact', 'label' => 'Formulario de contato', 'priority' => 70, 'is_active' => true],
                 ['contains' => 'onboarding', 'label' => 'Formulario onboarding', 'priority' => 60, 'is_active' => true],
             ],
+        ];
+    }
+
+    private function readIntegrationsSettings(): array
+    {
+        return $this->readJsonSetting(self::INTEGRATIONS_KEY, $this->defaultIntegrationsSettings());
+    }
+
+    private function defaultIntegrationsSettings(): array
+    {
+        return [
+            'meta_pixel' => [
+                'enabled' => false,
+                'pixel_id' => '',
+                'automatic_advanced_matching' => false,
+                'advanced_matching_fields' => [
+                    'city_state_zip' => false,
+                    'country' => false,
+                    'birth_date' => false,
+                    'email' => true,
+                    'external_id' => false,
+                    'gender' => false,
+                    'first_name_last_name' => true,
+                    'phone' => true,
+                ],
+                'conversions_api_enabled' => false,
+                'access_token' => '',
+                'api_version' => 'v22.0',
+                'test_event_code' => '',
+            ],
+        ];
+    }
+
+    private function sanitizePublicIntegrations(array $payload): array
+    {
+        $meta = is_array($payload['meta_pixel'] ?? null) ? $payload['meta_pixel'] : [];
+
+        foreach (self::META_PRIVATE_FIELDS as $privateField) {
+            unset($meta[$privateField]);
+        }
+
+        return [
+            ...$payload,
+            'meta_pixel' => $meta,
         ];
     }
 

@@ -330,6 +330,34 @@ export type GeneralSettingsResponse = {
   data: GeneralSettings;
 };
 
+export type MetaAdvancedMatchingFields = {
+  city_state_zip: boolean;
+  country: boolean;
+  birth_date: boolean;
+  email: boolean;
+  external_id: boolean;
+  gender: boolean;
+  first_name_last_name: boolean;
+  phone: boolean;
+};
+
+export type IntegrationsSettings = {
+  meta_pixel: {
+    enabled: boolean;
+    pixel_id: string;
+    automatic_advanced_matching: boolean;
+    advanced_matching_fields: MetaAdvancedMatchingFields;
+    conversions_api_enabled: boolean;
+    access_token: string;
+    api_version: string;
+    test_event_code: string;
+  };
+};
+
+export type IntegrationsSettingsResponse = {
+  data: IntegrationsSettings;
+};
+
 export type ScoreRulesSettings = {
   utm_source_bonus: number;
   page_view_weight: number;

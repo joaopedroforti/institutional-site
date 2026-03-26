@@ -30,6 +30,7 @@ Route::get('/proposals/{slug}', [PublicProposalController::class, 'show']);
 Route::post('/proposals/{slug}/approve', [PublicProposalController::class, 'approve']);
 Route::post('/proposals/{slug}/request-adjustment', [PublicProposalController::class, 'requestAdjustment']);
 Route::get('/settings/general', [CommercialSettingsController::class, 'publicGeneralSettings']);
+Route::get('/settings/integrations', [CommercialSettingsController::class, 'publicIntegrations']);
 Route::post('/whatsapp/webhook', WhatsAppWebhookController::class);
 
 Route::prefix('analytics')->group(function (): void {
@@ -66,6 +67,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::patch('/settings/proposals/deadlines', [CommercialSettingsController::class, 'updateProposalDeadlines']);
     Route::get('/settings/general', [CommercialSettingsController::class, 'generalSettings']);
     Route::patch('/settings/general', [CommercialSettingsController::class, 'updateGeneralSettings']);
+    Route::get('/settings/integrations', [CommercialSettingsController::class, 'integrations']);
+    Route::patch('/settings/integrations', [CommercialSettingsController::class, 'updateIntegrations']);
     Route::get('/settings/pricing', [CommercialSettingsController::class, 'pricingSettings']);
     Route::patch('/settings/pricing', [CommercialSettingsController::class, 'updatePricingSettings']);
     Route::get('/settings/score-rules', [CommercialSettingsController::class, 'scoreRules']);

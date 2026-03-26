@@ -9,6 +9,7 @@ use App\Models\LeadKanbanColumn;
 use App\Services\BudgetService;
 use App\Services\LeadAnalyticsService;
 use App\Services\LeadDistributionService;
+use App\Services\Meta\MetaConversionsApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,7 @@ class OnboardingController extends Controller
         LeadDistributionService $leadDistribution,
         LeadAnalyticsService $leadAnalytics,
         BudgetService $budgetService,
+        MetaConversionsApiService $metaConversions,
     ): JsonResponse {
         $payload = $request->validate([
             'lead_id' => ['nullable', 'integer', 'exists:contact_requests,id'],
@@ -171,6 +173,7 @@ class OnboardingController extends Controller
         $this->moveLeadToBudgetColumn($contact);
 
         $leadAnalytics->refreshLeadScore($contact);
+        $metaConversions->trackOnboardingSubmit($request, $contact, (string) $payload['project_type']);
 
         return response()->json([
             'message' => 'Onboarding recebido com sucesso.',

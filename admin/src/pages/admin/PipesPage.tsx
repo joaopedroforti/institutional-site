@@ -355,6 +355,16 @@ function formatOnboardingAnswer(field: string, rawValue: unknown): string {
   return ONBOARDING_VALUE_LABELS[field]?.[normalized] ?? normalized;
 }
 
+function parseDraggedLeadId(dataTransfer: DataTransfer): number | null {
+  const raw = dataTransfer.getData("application/x-kanban-lead-id") || dataTransfer.getData("text/plain");
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
 export default function PipesPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
@@ -392,7 +402,7 @@ export default function PipesPage() {
   const [lostReasonValue, setLostReasonValue] = useState("");
   const [lostReasonCustom, setLostReasonCustom] = useState("");
 
-  const [draggedLead, setDraggedLead] = useState<KanbanLead | null>(null);
+  const [draggedLeadId, setDraggedLeadId] = useState<number | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [onboardingPrompt, setOnboardingPrompt] = useState<{ url: string; leadName: string } | null>(null);
@@ -421,6 +431,7 @@ export default function PipesPage() {
   const [savingTag, setSavingTag] = useState(false);
   const [sourceMappingRules, setSourceMappingRules] = useState<SourceTagMappingRule[]>([]);
   const leadQueryToOpenRef = useRef<number | null>(null);
+  const dragOriginRef = useRef<{ leadId: number; columnId: number; index: number } | null>(null);
   const selectedLeadIdRef = useRef<number | null>(null);
   const whatsappConversationAbortRef = useRef<AbortController | null>(null);
   const whatsappConversationRequestSeqRef = useRef(0);
@@ -844,31 +855,40 @@ export default function PipesPage() {
       typeof droppedLeadId === "number" && Number.isFinite(droppedLeadId)
         ? columns.flatMap((column) => column.contacts ?? []).find((lead) => lead.id === droppedLeadId) ?? null
         : null;
-    const movingLead = draggedLead ?? fallbackLead;
+    const movingLeadByState =
+      typeof draggedLeadId === "number"
+        ? columns.flatMap((column) => column.contacts ?? []).find((lead) => lead.id === draggedLeadId) ?? null
+        : null;
+    const movingLead = movingLeadByState ?? fallbackLead;
 
     if (!movingLead || savingMove) {
       return;
     }
 
     const sourceColumn = columns.find((column) => (column.contacts ?? []).some((lead) => lead.id === movingLead.id));
-    const sourceIndex = sourceColumn?.contacts.findIndex((lead) => lead.id === movingLead.id) ?? -1;
+    const sourceIndexByLookup = sourceColumn?.contacts.findIndex((lead) => lead.id === movingLead.id) ?? -1;
+    const origin = dragOriginRef.current;
+    const sourceIndex = origin?.leadId === movingLead.id ? origin.index : sourceIndexByLookup;
+    const sourceColumnId = origin?.leadId === movingLead.id ? origin.columnId : sourceColumn?.id;
 
     let nextOrder = typeof targetIndex === "number" ? targetIndex : targetColumn.contacts.length;
-    if (sourceColumn && sourceColumn.id === targetColumn.id && sourceIndex >= 0 && sourceIndex < nextOrder) {
+    if (sourceColumnId === targetColumn.id && sourceIndex >= 0 && sourceIndex < nextOrder) {
       nextOrder -= 1;
     }
 
-    if (sourceColumn && sourceColumn.id === targetColumn.id && sourceIndex === nextOrder) {
-      setDraggedLead(null);
+    if (sourceColumnId === targetColumn.id && sourceIndex === nextOrder) {
+      setDraggedLeadId(null);
       setDragOverColumnId(null);
       setDragOverIndex(null);
+      dragOriginRef.current = null;
       return;
     }
 
     await performMove(movingLead, targetColumn, Math.max(0, nextOrder));
-    setDraggedLead(null);
+    setDraggedLeadId(null);
     setDragOverColumnId(null);
     setDragOverIndex(null);
+    dragOriginRef.current = null;
   };
 
   const saveLostReasonAndReject = async () => {
@@ -1694,11 +1714,11 @@ export default function PipesPage() {
                 }}
                 onDrop={(event) => {
                   event.preventDefault();
-                  const droppedLeadId = Number(event.dataTransfer.getData("text/plain"));
+                  const droppedLeadId = parseDraggedLeadId(event.dataTransfer);
                   void handleDropToColumn(
                     column,
                     dragOverColumnId === column.id ? (dragOverIndex ?? column.contacts.length) : column.contacts.length,
-                    Number.isFinite(droppedLeadId) ? droppedLeadId : undefined,
+                    droppedLeadId ?? undefined,
                   );
                 }}
                 onDragLeave={(event) => {
@@ -1742,8 +1762,7 @@ export default function PipesPage() {
                     </div>
                   )}
                   {dragOverColumnId === column.id && dragOverIndex === 0 && (
-                    <div className="rounded-lg border-2 border-dashed border-blue-400 bg-blue-50/70 px-3 py-3 text-center text-xs font-medium text-blue-700">
-                      Solte aqui para posicionar no topo
+                    <div className="my-1 h-3 rounded-md border border-dashed border-blue-400 bg-blue-50/60" aria-hidden="true">
                     </div>
                   )}
                   {column.contacts.map((lead, index) => {
@@ -1753,12 +1772,12 @@ export default function PipesPage() {
                     const whatsapp = hasPhone ? cleanPhoneForWa(lead.phone ?? "") : "";
                     const proposalApproved =
                       column.slug === "orcamento" && String(lead.metadata?.proposal_status ?? "") === "approved";
+                    const isSameColumnReorder = dragOriginRef.current?.columnId === column.id;
 
                     return (
                       <div key={lead.id}>
-                        {dragOverColumnId === column.id && dragOverIndex === index && (
-                          <div className="mb-2 rounded-lg border-2 border-dashed border-blue-400 bg-blue-50/70 px-3 py-3 text-center text-xs font-medium text-blue-700">
-                            Solte aqui para reposicionar
+                        {dragOverColumnId === column.id && dragOverIndex === index && isSameColumnReorder && (
+                          <div className="mb-2 h-3 rounded-md border border-dashed border-blue-400 bg-blue-50/60" aria-hidden="true">
                           </div>
                         )}
                         <div
@@ -1766,26 +1785,37 @@ export default function PipesPage() {
                           onDragStart={(event) => {
                             event.dataTransfer.effectAllowed = "move";
                             event.dataTransfer.setData("text/plain", String(lead.id));
-                            setDraggedLead(lead);
-                            setDragOverColumnId(column.id);
-                            setDragOverIndex(index);
-                          }}
-                          onDragEnd={() => {
-                            setDraggedLead(null);
+                            event.dataTransfer.setData("application/x-kanban-lead-id", String(lead.id));
+                            setDraggedLeadId(lead.id);
                             setDragOverColumnId(null);
                             setDragOverIndex(null);
+                            dragOriginRef.current = { leadId: lead.id, columnId: column.id, index };
+                          }}
+                          onDragEnd={() => {
+                            setDraggedLeadId(null);
+                            setDragOverColumnId(null);
+                            setDragOverIndex(null);
+                            dragOriginRef.current = null;
                           }}
                           onDragOver={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            const isBottomHalf = event.clientY > rect.top + rect.height / 2;
                             setDragOverColumnId(column.id);
-                            setDragOverIndex(index);
+                            setDragOverIndex(isBottomHalf ? index + 1 : index);
                           }}
                           onDrop={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            const droppedLeadId = Number(event.dataTransfer.getData("text/plain"));
-                            void handleDropToColumn(column, index, Number.isFinite(droppedLeadId) ? droppedLeadId : undefined);
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            const isBottomHalf = event.clientY > rect.top + rect.height / 2;
+                            const droppedLeadId = parseDraggedLeadId(event.dataTransfer);
+                            void handleDropToColumn(
+                              column,
+                              isBottomHalf ? index + 1 : index,
+                              droppedLeadId ?? undefined,
+                            );
                           }}
                           onClick={() => {
                             void openLeadDetails(lead);
@@ -1846,8 +1876,7 @@ export default function PipesPage() {
                     );
                   })}
                   {dragOverColumnId === column.id && dragOverIndex === column.contacts.length && column.contacts.length > 0 && (
-                    <div className="rounded-lg border-2 border-dashed border-blue-400 bg-blue-50/70 px-3 py-3 text-center text-xs font-medium text-blue-700">
-                      Solte aqui para posicionar no final
+                    <div className="my-1 h-3 rounded-md border border-dashed border-blue-400 bg-blue-50/60" aria-hidden="true">
                     </div>
                   )}
                 </div>
@@ -2129,7 +2158,7 @@ export default function PipesPage() {
 
       {selectedLead && (
         <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-[95] flex items-start justify-center overflow-y-auto bg-slate-900/50 p-0 md:items-center md:p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setSelectedLead(null);
@@ -2138,10 +2167,10 @@ export default function PipesPage() {
           }}
         >
           <div
-            className="flex h-[88vh] w-full max-w-7xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            className="flex h-[100dvh] w-full max-w-7xl flex-col overflow-hidden rounded-none border-0 bg-white shadow-2xl md:h-[88vh] md:rounded-3xl md:border md:border-slate-200"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <div className="border-b border-blue-900/40 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 px-4 py-3 text-white">
+            <div className="border-b border-blue-900/40 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-800 px-3 py-3 text-white md:px-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/12 text-base font-semibold text-white">
@@ -2217,7 +2246,7 @@ export default function PipesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-white">
+                <div className="flex items-center gap-2 self-end text-xs text-white md:self-auto">
                   <span className="rounded-md border border-white/30 bg-white/15 px-2 py-1">
                     {selectedCardIndex >= 0 ? selectedCardIndex + 1 : 1}/{Math.max(1, visibleCards.length)}
                   </span>
@@ -2344,12 +2373,7 @@ export default function PipesPage() {
                 </div>
               </div>
 
-              <div
-                className="mt-3 grid items-center gap-1 rounded-lg bg-white/10 p-1"
-                style={{
-                  gridTemplateColumns: `repeat(${Math.max(modalStageColumns.length, 1)}, minmax(0, 1fr))`,
-                }}
-              >
+              <div className="mt-3 flex items-center gap-1 overflow-x-auto rounded-lg bg-white/10 p-1">
                 {modalStageColumns.map((stage) => {
                   const isActive = stage.slug === currentLeadStageSlug;
                   return (
@@ -2371,7 +2395,7 @@ export default function PipesPage() {
                             : prev,
                         );
                       }}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                      className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition ${
                         isActive
                           ? "bg-white text-blue-900"
                           : "text-blue-100 hover:bg-white/20"
@@ -2384,8 +2408,8 @@ export default function PipesPage() {
               </div>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 p-4 lg:grid-cols-[200px_1fr]">
-              <aside className="flex min-h-0 flex-row gap-2 border-b border-slate-200 bg-slate-50 p-3 lg:flex-col lg:border-b-0 lg:border-r lg:border-slate-200">
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 p-2 md:p-4 lg:grid-cols-[200px_1fr]">
+              <aside className="flex min-h-0 flex-row gap-2 overflow-x-auto border-b border-slate-200 bg-slate-50 p-2 md:p-3 lg:flex-col lg:overflow-visible lg:border-b-0 lg:border-r lg:border-slate-200">
                 {LEAD_MODAL_TABS.map((tab) => {
                   const Icon = tab.icon;
 
@@ -2394,7 +2418,7 @@ export default function PipesPage() {
                       key={tab.key}
                       type="button"
                       onClick={() => setActiveTab(tab.key)}
-                      className={`flex min-w-[170px] items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition lg:min-w-0 lg:justify-start ${
+                      className={`flex min-w-[145px] items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition md:min-w-[170px] lg:min-w-0 lg:justify-start ${
                         activeTab === tab.key
                           ? "bg-blue-700 text-white shadow-sm"
                           : "text-slate-600 hover:bg-slate-100"
@@ -2650,15 +2674,15 @@ export default function PipesPage() {
               </section>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="border-t border-slate-200 px-3 py-3 md:px-4">
+              <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                 <button
                   type="button"
                   disabled={isSavingLeadInfo}
                   onClick={() => {
                     void saveLeadDetails();
                   }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                 >
                   <Save size={15} />
                   Salvar alteracoes
@@ -2678,7 +2702,7 @@ export default function PipesPage() {
                           mode: "reject",
                         });
                       }}
-                      className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
                     >
                       <XCircle size={16} />
                       Perder
@@ -2693,7 +2717,7 @@ export default function PipesPage() {
 
                         void performTransition(selectedLead.id, "approve");
                       }}
-                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
                     >
                       <CheckCircle2 size={16} />
                       Ganhar
@@ -2712,7 +2736,7 @@ export default function PipesPage() {
 
                       void performTransition(selectedLead.id, "project_delivered");
                     }}
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-60"
                   >
                     <Rocket size={16} />
                     Projeto Entregue
@@ -2730,7 +2754,7 @@ export default function PipesPage() {
 
                       void performTransition(selectedLead.id, "project_finalized");
                     }}
-                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-700 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-700 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-60"
                   >
                     <CheckCircle2 size={16} />
                     Projeto Finalizado

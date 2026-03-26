@@ -10,6 +10,7 @@ use App\Models\LeadKanbanColumn;
 use App\Models\VisitorSession;
 use App\Services\LeadAnalyticsService;
 use App\Services\LeadDistributionService;
+use App\Services\Meta\MetaConversionsApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -22,6 +23,7 @@ class ContactRequestController extends Controller
         Request $request,
         LeadAnalyticsService $leadAnalytics,
         LeadDistributionService $leadDistribution,
+        MetaConversionsApiService $metaConversions,
     ): JsonResponse
     {
         $payload = $request->validate([
@@ -134,6 +136,7 @@ class ContactRequestController extends Controller
             }
 
             $leadAnalytics->refreshLeadScore($existingLead);
+            $metaConversions->trackLead($request, $existingLead);
 
             return response()->json([
                 'message' => 'Solicitacao atualizada com sucesso.',
@@ -186,6 +189,8 @@ class ContactRequestController extends Controller
                 'lead_score' => min((int) ($contact->lead_score ?? 10), (int) ($scoreRules['draft_max_score'] ?? 12)),
                 'score_band' => (string) ($scoreRules['draft_score_band'] ?? 'cold'),
             ])->save();
+        } else {
+            $metaConversions->trackLead($request, $contact);
         }
 
         return response()->json([

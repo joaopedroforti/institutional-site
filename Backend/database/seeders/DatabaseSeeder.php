@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         LeadKanbanColumn::seedDefaults();
+        $this->call(GeneralSettingsSeeder::class);
 
         User::query()->updateOrCreate([
             'username' => 'jpedroforti',
