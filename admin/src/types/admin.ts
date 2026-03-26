@@ -352,6 +352,12 @@ export type IntegrationsSettings = {
     api_version: string;
     test_event_code: string;
   };
+  gemini: {
+    enabled: boolean;
+    api_key: string;
+    model: string;
+    system_prompt: string;
+  };
 };
 
 export type IntegrationsSettingsResponse = {
@@ -516,11 +522,26 @@ export type WhatsAppConversationPayloadResponse = {
   messages: WhatsAppMessageRecord[];
 };
 
+export type WhatsAppGeminiInsightsResponse = {
+  data: {
+    conversation_id: number;
+    enabled: boolean;
+    summary: string;
+    productivity_score: number;
+    productivity_band: "vermelha" | "laranja" | "verde" | string;
+    recommended_formality: "formal" | "equilibrado" | "informal" | string;
+    language_guidance: string[];
+    next_steps: string[];
+    risk_flags: string[];
+  };
+};
+
 export type WhatsAppSettingsResponse = {
   data: {
     instance: {
       id: number;
       instance_name: string;
+      is_active?: boolean;
       status: string;
       profile_name: string | null;
       profile_status: string | null;

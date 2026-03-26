@@ -7,10 +7,12 @@ import { ApiError, apiRequest } from "../../lib/api";
 import LoadingState from "../../components/common/LoadingState";
 import AlertModal from "../../components/common/AlertModal";
 import type {
+  IntegrationsSettingsResponse,
   SellersResponse,
   WhatsAppConversationPayloadResponse,
   WhatsAppConversationRecord,
   WhatsAppConversationsResponse,
+  WhatsAppGeminiInsightsResponse,
   WhatsAppMessageRecord,
   WhatsAppQuickReplyRecord,
   WhatsAppTagRecord,
@@ -166,6 +168,11 @@ export default function WhatsAppPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [geminiEnabled, setGeminiEnabled] = useState(false);
+  const [aiInsightsOpen, setAiInsightsOpen] = useState(false);
+  const [aiInsightsLoading, setAiInsightsLoading] = useState(false);
+  const [aiInsightsError, setAiInsightsError] = useState<string | null>(null);
+  const [aiInsights, setAiInsights] = useState<WhatsAppGeminiInsightsResponse["data"] | null>(null);
 
   const [newConversationOpen, setNewConversationOpen] = useState(false);
 
@@ -178,6 +185,8 @@ export default function WhatsAppPage() {
   const pendingConversationQueryRef = useRef<number | null>(null);
   const conversationRequestAbortRef = useRef<AbortController | null>(null);
   const conversationRequestSeqRef = useRef(0);
+  const aiInsightsAbortRef = useRef<AbortController | null>(null);
+  const aiInsightsSeqRef = useRef(0);
 
   const conversationsCacheKey = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase() || "__empty__";
@@ -323,6 +332,19 @@ export default function WhatsAppPage() {
       setQuickReplies(response.data ?? []);
     } catch {
       // silencioso
+    }
+  }, [token]);
+
+  const loadGeminiStatus = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest<IntegrationsSettingsResponse>("/api/admin/settings/integrations", {}, token);
+      setGeminiEnabled(Boolean(response.data?.gemini?.enabled));
+    } catch {
+      setGeminiEnabled(false);
     }
   }, [token]);
 
@@ -524,7 +546,16 @@ export default function WhatsAppPage() {
     void loadUsers();
     void loadTags();
     void loadQuickReplies();
-  }, [loadUsers, loadTags, loadQuickReplies]);
+    void loadGeminiStatus();
+  }, [loadUsers, loadTags, loadQuickReplies, loadGeminiStatus]);
+
+  useEffect(() => {
+    aiInsightsAbortRef.current?.abort();
+    setAiInsightsOpen(false);
+    setAiInsights(null);
+    setAiInsightsError(null);
+    setAiInsightsLoading(false);
+  }, [selectedConversation?.id]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -690,9 +721,56 @@ export default function WhatsAppPage() {
   useEffect(
     () => () => {
       conversationRequestAbortRef.current?.abort();
+      aiInsightsAbortRef.current?.abort();
     },
     [],
   );
+
+  const openAiInsights = useCallback(async () => {
+    if (!token || !selectedConversation) {
+      return;
+    }
+
+    aiInsightsAbortRef.current?.abort();
+    const controller = new AbortController();
+    aiInsightsAbortRef.current = controller;
+    const requestSeq = aiInsightsSeqRef.current + 1;
+    aiInsightsSeqRef.current = requestSeq;
+    const conversationId = selectedConversation.id;
+
+    setAiInsightsOpen(true);
+    setAiInsightsLoading(true);
+    setAiInsightsError(null);
+    setAiInsights(null);
+
+    try {
+      const response = await apiRequest<WhatsAppGeminiInsightsResponse>(
+        `/api/admin/whatsapp/conversations/${conversationId}/gemini-insights`,
+        { signal: controller.signal },
+        token,
+      );
+
+      if (
+        controller.signal.aborted ||
+        requestSeq !== aiInsightsSeqRef.current ||
+        selectedConversationIdRef.current !== conversationId
+      ) {
+        return;
+      }
+
+      setAiInsights(response.data);
+    } catch (requestError) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      setAiInsightsError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel gerar os insights.");
+    } finally {
+      if (requestSeq === aiInsightsSeqRef.current) {
+        setAiInsightsLoading(false);
+      }
+    }
+  }, [token, selectedConversation]);
 
   const sendText = useCallback(
     async (text: string) => {
@@ -1472,6 +1550,11 @@ export default function WhatsAppPage() {
             loadingOlder={loadingOlderMessages}
             hasOlderMessages={selectedConversation ? (hasOlderMapRef.current[selectedConversation.id] ?? true) : false}
             onLoadOlderMessages={loadOlderMessages}
+            aiEnabled={geminiEnabled}
+            aiLoading={aiInsightsLoading}
+            onOpenAiInsights={() => {
+              void openAiInsights();
+            }}
             headerActions={
               selectedConversation ? (
                 <>
@@ -1659,6 +1742,152 @@ export default function WhatsAppPage() {
         onClose={() => setNewConversationOpen(false)}
         onStart={startConversation}
       />
+
+      {aiInsightsOpen && selectedConversation && (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/45 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setAiInsightsOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Insights</h3>
+                <p className="text-xs text-slate-500">{conversationDisplayName(selectedConversation)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiInsightsOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+                aria-label="Fechar insights"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="max-h-[80vh] overflow-y-auto p-4">
+              {aiInsightsLoading && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                  Gerando resumo da conversa...
+                </div>
+              )}
+
+              {!aiInsightsLoading && aiInsightsError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">
+                  {aiInsightsError}
+                </div>
+              )}
+
+              {!aiInsightsLoading && !aiInsightsError && aiInsights && (
+                <div className="space-y-3">
+                  {(() => {
+                    const score = Number.isFinite(Number(aiInsights.productivity_score))
+                      ? Math.max(0, Math.min(100, Number(aiInsights.productivity_score)))
+                      : 0;
+                    const band = String(aiInsights.productivity_band || "").toLowerCase();
+                    const isRed = band === "vermelha" || score <= 39;
+                    const isOrange = band === "laranja" || (!isRed && score <= 69);
+                    const palette = isRed
+                      ? {
+                          box: "border-red-200 bg-red-50",
+                          label: "text-red-700",
+                          bar: "bg-red-500",
+                          badge: "bg-red-100 text-red-700",
+                          name: "Vermelha",
+                        }
+                      : isOrange
+                        ? {
+                            box: "border-amber-200 bg-amber-50",
+                            label: "text-amber-700",
+                            bar: "bg-amber-500",
+                            badge: "bg-amber-100 text-amber-700",
+                            name: "Laranja",
+                          }
+                        : {
+                            box: "border-emerald-200 bg-emerald-50",
+                            label: "text-emerald-700",
+                            bar: "bg-emerald-500",
+                            badge: "bg-emerald-100 text-emerald-700",
+                            name: "Verde",
+                          };
+
+                    return (
+                      <article className={`rounded-lg border p-3 ${palette.box}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-xs font-semibold uppercase tracking-wide ${palette.label}`}>Temperatura do atendimento</p>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${palette.badge}`}>{palette.name}</span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
+                          <div className={`h-full ${palette.bar}`} style={{ width: `${score}%` }} />
+                        </div>
+                        <p className={`mt-1 text-xs font-medium ${palette.label}`}>Nota: {score}/100</p>
+                      </article>
+                    );
+                  })()}
+
+                  {!aiInsights.enabled && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Integracao Gemini desativada. Ative em Configuracoes &gt; Integracoes &gt; Gemini.
+                    </div>
+                  )}
+
+                  <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resumo</p>
+                    <p className="mt-1 text-sm text-slate-700">{aiInsights.summary || "Sem resumo disponivel."}</p>
+                  </article>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <article className="rounded-lg border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Como conversar</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Tom sugerido: <span className="font-medium capitalize text-slate-700">{aiInsights.recommended_formality || "equilibrado"}</span>
+                      </p>
+                      {(aiInsights.language_guidance ?? []).length > 0 ? (
+                        <ul className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                          {aiInsights.language_guidance.map((item, index) => (
+                            <li key={`lang-guidance-${index}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">Sem orientacoes adicionais no momento.</p>
+                      )}
+                    </article>
+
+                    <article className="rounded-lg border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Proximos passos</p>
+                      {(aiInsights.next_steps ?? []).length > 0 ? (
+                        <ul className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                          {aiInsights.next_steps.map((item, index) => (
+                            <li key={`next-step-${index}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">Nenhuma acao recomendada.</p>
+                      )}
+                    </article>
+                  </div>
+
+                  {(aiInsights.risk_flags ?? []).length > 0 && (
+                    <article className="rounded-lg border border-red-200 bg-red-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Pontos de atencao</p>
+                      <p className="mt-1 text-xs leading-relaxed text-red-700">
+                        {(aiInsights.risk_flags ?? []).join(" • ")}
+                      </p>
+                    </article>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {settingsOpen && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/45 p-4">

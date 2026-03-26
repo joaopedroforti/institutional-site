@@ -24,11 +24,12 @@ const navItems: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/servicos", label: "Serviços" },
   { href: "/cases", label: "Cases" },
-  { href: "/historia", label: "História" },
+  { href: "/historia", label: "Sobre nós" },
 ];
 
 export default function SiteShell({ children, flushFooterGap = false }: SiteShellProps) {
   const pathname = usePathname();
+  const headerNavItems = useMemo(() => navItems.filter((item) => item.href !== "/cases"), []);
   const [scrollOffset, setScrollOffset] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
@@ -37,6 +38,11 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
   const [whatsPhone, setWhatsPhone] = useState("");
   const [whatsLoading, setWhatsLoading] = useState(false);
   const [whatsError, setWhatsError] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     let frameId = 0;
@@ -210,8 +216,19 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
             />
           </Link>
           <div className={styles.menuGroup}>
+            <button
+              type="button"
+              className={styles.menuToggle}
+              aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
             <nav className={styles.nav}>
-              {navItems.map((item) => (
+              {headerNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -226,6 +243,24 @@ export default function SiteShell({ children, flushFooterGap = false }: SiteShel
             </Link>
           </div>
         </div>
+        {mobileMenuOpen && (
+          <div className={styles.mobileNavWrap}>
+            <nav className={styles.mobileNav}>
+              {headerNavItems.map((item) => (
+                <Link
+                  key={`mobile-${item.href}`}
+                  href={item.href}
+                  className={pathname === item.href ? styles.mobileActiveLink : styles.mobileNavLink}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <Link href="/contato" className={styles.mobileHeaderCta} data-track data-track-type="cta">
+                Solicitar proposta
+              </Link>
+            </nav>
+          </div>
+        )}
       </header>
 
       <main className={styles.main}>{children}</main>

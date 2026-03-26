@@ -81,6 +81,7 @@ class ContactRequestController extends Controller
                 ...(is_array($existingLead->metadata) ? $existingLead->metadata : []),
                 ...($payload['metadata'] ?? []),
             ], fn ($value) => $value !== null && $value !== '');
+            $mergedMetadata = $this->attachFormDataToOnboardingMetadata($mergedMetadata, $payload);
 
             $existingLead->update([
                 'name' => $existingLead->name ?: $payload['name'],
@@ -109,6 +110,7 @@ class ContactRequestController extends Controller
                 ...(is_array($existingLead->metadata) ? $existingLead->metadata : []),
                 ...($payload['metadata'] ?? []),
             ], fn ($value) => $value !== null && $value !== '');
+            $mergedMetadata = $this->attachFormDataToOnboardingMetadata($mergedMetadata, $payload);
 
             $existingLead->update([
                 'visitor_session_id' => $existingLead->visitor_session_id ?: $session?->id,
@@ -150,6 +152,11 @@ class ContactRequestController extends Controller
             ->where('lead_kanban_column_id', $defaultColumn->id)
             ->max('lead_order');
 
+        $metadata = $this->attachFormDataToOnboardingMetadata(
+            is_array($payload['metadata'] ?? null) ? $payload['metadata'] : [],
+            $payload,
+        );
+
         $contact = ContactRequest::query()->create([
             'visitor_session_id' => $session?->id,
             'lead_kanban_column_id' => $defaultColumn->id,
@@ -164,7 +171,7 @@ class ContactRequestController extends Controller
             'stage_entered_at' => now(),
             'source_url' => $payload['source_url'] ?? null,
             'referrer' => $payload['referrer'] ?? null,
-            'metadata' => $payload['metadata'] ?? null,
+            'metadata' => $metadata ?: null,
         ]);
 
         if (Schema::hasTable('lead_histories')) {
@@ -432,5 +439,53 @@ class ContactRequestController extends Controller
         }
 
         return $query->first();
+    }
+
+    /**
+     * Alimenta metadata.onboarding para que formulários comuns apareçam na aba
+     * "Dados / Onboarding" no CRM, sem sobrescrever onboarding real já existente.
+     *
+     * @param  array<string, mixed>  $metadata
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function attachFormDataToOnboardingMetadata(array $metadata, array $payload): array
+    {
+        $source = strtolower((string) ($metadata['source'] ?? ''));
+        if (str_contains($source, 'onboarding')) {
+            return $metadata;
+        }
+
+        $onboarding = is_array($metadata['onboarding'] ?? null) ? $metadata['onboarding'] : [];
+        $answers = is_array($onboarding['answers'] ?? null) ? $onboarding['answers'] : [];
+
+        if (empty($onboarding['project_type'])) {
+            $onboarding['project_type'] = 'site';
+        }
+
+        if (empty($onboarding['segment'])) {
+            $onboarding['segment'] = 'Formulario de contato';
+        }
+
+        $message = trim((string) ($payload['message'] ?? ''));
+        $company = trim((string) ($payload['company'] ?? ''));
+        $sourceUrl = trim((string) ($payload['source_url'] ?? ''));
+
+        if ($message !== '' && empty($answers['siteNotes'])) {
+            $answers['siteNotes'] = $message;
+        }
+
+        if ($company !== '' && empty($answers['siteAssets'])) {
+            $answers['siteAssets'] = sprintf('Empresa: %s', $company);
+        }
+
+        if ($sourceUrl !== '' && empty($answers['siteReferences'])) {
+            $answers['siteReferences'] = $sourceUrl;
+        }
+
+        $onboarding['answers'] = $answers;
+        $metadata['onboarding'] = $onboarding;
+
+        return $metadata;
     }
 }

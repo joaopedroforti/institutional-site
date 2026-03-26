@@ -531,7 +531,7 @@ export default function Page() {
             {
               n: '03',
               title: 'Revisão & Ativação',
-              desc: 'Você revisa, aprova os ajustes e a gente lança. Em até 7 dias seu site está no ar, pronto para vender.',
+              desc: 'Você revisa, aprova os ajustes e a gente lança. Em até 3 dias seu site está no ar, pronto para vender.',
             },
           ].map((step, i) => (
             <AnimatedItem key={i} className="process-step" delay={i * 120}>

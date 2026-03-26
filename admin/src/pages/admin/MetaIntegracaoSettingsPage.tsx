@@ -28,6 +28,12 @@ const DEFAULT_SETTINGS: IntegrationsSettings = {
     api_version: "v22.0",
     test_event_code: "",
   },
+  gemini: {
+    enabled: false,
+    api_key: "",
+    model: "gemini-1.5-flash",
+    system_prompt: "",
+  },
 };
 
 const FIELD_LABELS: Array<{ key: keyof MetaAdvancedMatchingFields; label: string }> = [
@@ -57,7 +63,8 @@ export default function MetaIntegracaoSettingsPage() {
     try {
       const response = await apiRequest<IntegrationsSettingsResponse>("/api/admin/settings/integrations", {}, token);
       const payload = response.data?.meta_pixel ?? DEFAULT_SETTINGS.meta_pixel;
-      setSettings({
+      setSettings((prev) => ({
+        ...prev,
         meta_pixel: {
           enabled: Boolean(payload.enabled),
           pixel_id: String(payload.pixel_id ?? ""),
@@ -71,7 +78,7 @@ export default function MetaIntegracaoSettingsPage() {
           api_version: String(payload.api_version ?? "v22.0"),
           test_event_code: String(payload.test_event_code ?? ""),
         },
-      });
+      }));
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel carregar as integracoes.");
     } finally {

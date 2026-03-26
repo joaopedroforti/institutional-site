@@ -16,6 +16,7 @@ import WhatsAppSettingsPage from "./pages/admin/WhatsAppSettingsPage";
 import SettingsHomePage from "./pages/admin/SettingsHomePage";
 import IntegracoesSettingsPage from "./pages/admin/IntegracoesSettingsPage";
 import MetaIntegracaoSettingsPage from "./pages/admin/MetaIntegracaoSettingsPage";
+import GeminiIntegracaoSettingsPage from "./pages/admin/GeminiIntegracaoSettingsPage";
 import ScoreRulesSettingsPage from "./pages/admin/ScoreRulesSettingsPage";
 import SourceMappingsSettingsPage from "./pages/admin/SourceMappingsSettingsPage";
 
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/admin/configuracoes/whatsapp" element={<WhatsAppSettingsPage />} />
             <Route path="/admin/configuracoes/integracoes" element={<IntegracoesSettingsPage />} />
             <Route path="/admin/configuracoes/integracoes/meta" element={<MetaIntegracaoSettingsPage />} />
+            <Route path="/admin/configuracoes/integracoes/gemini" element={<GeminiIntegracaoSettingsPage />} />
             <Route path="/admin/configuracoes/regras-score" element={<ScoreRulesSettingsPage />} />
             <Route path="/admin/configuracoes/origens-tags" element={<SourceMappingsSettingsPage />} />
           </Route>

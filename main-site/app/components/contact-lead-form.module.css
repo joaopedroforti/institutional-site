@@ -71,6 +71,53 @@
   border: 1px solid rgba(197, 90, 44, 0.18);
 }
 
+.successModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.successModalCard {
+  width: min(420px, calc(100vw - 2rem));
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  box-shadow: 0 26px 55px rgba(15, 23, 42, 0.22);
+  padding: 1.25rem 1.15rem 1.1rem;
+  text-align: center;
+}
+
+.successModalTitle {
+  color: #0f335f;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.successModalText {
+  margin-top: 0.45rem;
+  color: #4f678c;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.successModalButton {
+  margin-top: 0.95rem;
+  min-height: 42px;
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(125deg, #0e61c7 0%, #1793e6 100%);
+  cursor: pointer;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;

@@ -36,6 +36,9 @@ class CommercialSettingsController extends Controller
     private const META_PRIVATE_FIELDS = [
         'access_token',
     ];
+    private const GEMINI_PRIVATE_FIELDS = [
+        'api_key',
+    ];
 
     public function publicGeneralSettings(): JsonResponse
     {
@@ -109,34 +112,83 @@ class CommercialSettingsController extends Controller
             ], 422);
         }
 
+        $current = $this->readIntegrationsSettings();
+
         $payload = $request->validate([
-            'meta_pixel' => ['required', 'array'],
-            'meta_pixel.enabled' => ['required', 'boolean'],
+            'meta_pixel' => ['sometimes', 'array'],
+            'meta_pixel.enabled' => ['sometimes', 'boolean'],
             'meta_pixel.pixel_id' => ['nullable', 'string', 'max:80'],
-            'meta_pixel.automatic_advanced_matching' => ['required', 'boolean'],
-            'meta_pixel.advanced_matching_fields' => ['required', 'array'],
-            'meta_pixel.conversions_api_enabled' => ['required', 'boolean'],
+            'meta_pixel.automatic_advanced_matching' => ['sometimes', 'boolean'],
+            'meta_pixel.advanced_matching_fields' => ['sometimes', 'array'],
+            'meta_pixel.conversions_api_enabled' => ['sometimes', 'boolean'],
             'meta_pixel.access_token' => ['nullable', 'string', 'max:600'],
             'meta_pixel.api_version' => ['nullable', 'string', 'max:16'],
             'meta_pixel.test_event_code' => ['nullable', 'string', 'max:120'],
+            'gemini' => ['sometimes', 'array'],
+            'gemini.enabled' => ['sometimes', 'boolean'],
+            'gemini.api_key' => ['nullable', 'string', 'max:600'],
+            'gemini.model' => ['nullable', 'string', 'max:120'],
+            'gemini.system_prompt' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $fields = [];
-        $rawFields = $payload['meta_pixel']['advanced_matching_fields'] ?? [];
+        $defaults = $this->defaultIntegrationsSettings();
+        $currentMeta = is_array($current['meta_pixel'] ?? null) ? $current['meta_pixel'] : $defaults['meta_pixel'];
+
+        $fields = is_array($currentMeta['advanced_matching_fields'] ?? null)
+            ? $currentMeta['advanced_matching_fields']
+            : [];
+        $rawFields = is_array($payload['meta_pixel']['advanced_matching_fields'] ?? null)
+            ? $payload['meta_pixel']['advanced_matching_fields']
+            : [];
         foreach (self::META_ADVANCED_MATCHING_FIELDS as $key) {
-            $fields[$key] = (bool) ($rawFields[$key] ?? false);
+            $fields[$key] = array_key_exists($key, $rawFields)
+                ? (bool) $rawFields[$key]
+                : (bool) ($fields[$key] ?? false);
         }
+
+        $metaPayload = is_array($payload['meta_pixel'] ?? null) ? $payload['meta_pixel'] : [];
+
+        $currentGemini = is_array($current['gemini'] ?? null) ? $current['gemini'] : $defaults['gemini'];
+        $geminiPayload = is_array($payload['gemini'] ?? null) ? $payload['gemini'] : [];
 
         $normalized = [
             'meta_pixel' => [
-                'enabled' => (bool) ($payload['meta_pixel']['enabled'] ?? false),
-                'pixel_id' => trim((string) ($payload['meta_pixel']['pixel_id'] ?? '')),
-                'automatic_advanced_matching' => (bool) ($payload['meta_pixel']['automatic_advanced_matching'] ?? false),
+                'enabled' => array_key_exists('enabled', $metaPayload)
+                    ? (bool) $metaPayload['enabled']
+                    : (bool) ($currentMeta['enabled'] ?? false),
+                'pixel_id' => array_key_exists('pixel_id', $metaPayload)
+                    ? trim((string) ($metaPayload['pixel_id'] ?? ''))
+                    : trim((string) ($currentMeta['pixel_id'] ?? '')),
+                'automatic_advanced_matching' => array_key_exists('automatic_advanced_matching', $metaPayload)
+                    ? (bool) $metaPayload['automatic_advanced_matching']
+                    : (bool) ($currentMeta['automatic_advanced_matching'] ?? false),
                 'advanced_matching_fields' => $fields,
-                'conversions_api_enabled' => (bool) ($payload['meta_pixel']['conversions_api_enabled'] ?? false),
-                'access_token' => trim((string) ($payload['meta_pixel']['access_token'] ?? '')),
-                'api_version' => trim((string) ($payload['meta_pixel']['api_version'] ?? 'v22.0')) ?: 'v22.0',
-                'test_event_code' => trim((string) ($payload['meta_pixel']['test_event_code'] ?? '')),
+                'conversions_api_enabled' => array_key_exists('conversions_api_enabled', $metaPayload)
+                    ? (bool) $metaPayload['conversions_api_enabled']
+                    : (bool) ($currentMeta['conversions_api_enabled'] ?? false),
+                'access_token' => array_key_exists('access_token', $metaPayload)
+                    ? trim((string) ($metaPayload['access_token'] ?? ''))
+                    : trim((string) ($currentMeta['access_token'] ?? '')),
+                'api_version' => array_key_exists('api_version', $metaPayload)
+                    ? (trim((string) ($metaPayload['api_version'] ?? 'v22.0')) ?: 'v22.0')
+                    : (trim((string) ($currentMeta['api_version'] ?? 'v22.0')) ?: 'v22.0'),
+                'test_event_code' => array_key_exists('test_event_code', $metaPayload)
+                    ? trim((string) ($metaPayload['test_event_code'] ?? ''))
+                    : trim((string) ($currentMeta['test_event_code'] ?? '')),
+            ],
+            'gemini' => [
+                'enabled' => array_key_exists('enabled', $geminiPayload)
+                    ? (bool) $geminiPayload['enabled']
+                    : (bool) ($currentGemini['enabled'] ?? false),
+                'api_key' => array_key_exists('api_key', $geminiPayload)
+                    ? trim((string) ($geminiPayload['api_key'] ?? ''))
+                    : trim((string) ($currentGemini['api_key'] ?? '')),
+                'model' => array_key_exists('model', $geminiPayload)
+                    ? (trim((string) ($geminiPayload['model'] ?? 'gemini-1.5-flash')) ?: 'gemini-1.5-flash')
+                    : (trim((string) ($currentGemini['model'] ?? 'gemini-1.5-flash')) ?: 'gemini-1.5-flash'),
+                'system_prompt' => array_key_exists('system_prompt', $geminiPayload)
+                    ? trim((string) ($geminiPayload['system_prompt'] ?? ''))
+                    : trim((string) ($currentGemini['system_prompt'] ?? '')),
             ],
         ];
 
@@ -454,20 +506,31 @@ class CommercialSettingsController extends Controller
                 'api_version' => 'v22.0',
                 'test_event_code' => '',
             ],
+            'gemini' => [
+                'enabled' => false,
+                'api_key' => '',
+                'model' => 'gemini-1.5-flash',
+                'system_prompt' => 'Voce e um assistente comercial para conversas via WhatsApp. Resuma historico e indique o melhor estilo de abordagem para conversao com linguagem clara e objetiva.',
+            ],
         ];
     }
 
     private function sanitizePublicIntegrations(array $payload): array
     {
         $meta = is_array($payload['meta_pixel'] ?? null) ? $payload['meta_pixel'] : [];
+        $gemini = is_array($payload['gemini'] ?? null) ? $payload['gemini'] : [];
 
         foreach (self::META_PRIVATE_FIELDS as $privateField) {
             unset($meta[$privateField]);
+        }
+        foreach (self::GEMINI_PRIVATE_FIELDS as $privateField) {
+            unset($gemini[$privateField]);
         }
 
         return [
             ...$payload,
             'meta_pixel' => $meta,
+            'gemini' => $gemini,
         ];
     }
 

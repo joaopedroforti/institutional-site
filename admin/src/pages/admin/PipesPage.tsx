@@ -32,6 +32,7 @@ import { withMainSiteUrl } from "../../config/runtime";
 import LoadingState from "../../components/common/LoadingState";
 import AlertModal from "../../components/common/AlertModal";
 import type {
+  IntegrationsSettingsResponse,
   KanbanColumn,
   KanbanLead,
   KanbanResponse,
@@ -41,11 +42,13 @@ import type {
   SourceTagMappingRule,
   WhatsAppConversationPayloadResponse,
   WhatsAppConversationRecord,
+  WhatsAppGeminiInsightsResponse,
   WhatsAppMessageRecord,
   WhatsAppQuickReplyRecord,
   WhatsAppTagRecord,
 } from "../../types/admin";
 import WhatsAppConversationView from "../../components/whatsapp/WhatsAppConversationView";
+import { conversationDisplayName } from "../../components/whatsapp/utils";
 
 type EditableColumn = {
   id: number | string;
@@ -424,6 +427,11 @@ export default function PipesPage() {
   const [whatsappMessages, setWhatsappMessages] = useState<WhatsAppMessageRecord[]>([]);
   const [whatsappLoading, setWhatsappLoading] = useState(false);
   const [whatsappSending, setWhatsappSending] = useState(false);
+  const [whatsappGeminiEnabled, setWhatsappGeminiEnabled] = useState(false);
+  const [whatsappGeminiOpen, setWhatsappGeminiOpen] = useState(false);
+  const [whatsappGeminiLoading, setWhatsappGeminiLoading] = useState(false);
+  const [whatsappGeminiError, setWhatsappGeminiError] = useState<string | null>(null);
+  const [whatsappGeminiInsights, setWhatsappGeminiInsights] = useState<WhatsAppGeminiInsightsResponse["data"] | null>(null);
   const [whatsappQuickReplies, setWhatsappQuickReplies] = useState<WhatsAppQuickReplyRecord[]>([]);
   const [tagCatalog, setTagCatalog] = useState<WhatsAppTagRecord[]>([]);
   const [tagDraft, setTagDraft] = useState("");
@@ -435,6 +443,8 @@ export default function PipesPage() {
   const selectedLeadIdRef = useRef<number | null>(null);
   const whatsappConversationAbortRef = useRef<AbortController | null>(null);
   const whatsappConversationRequestSeqRef = useRef(0);
+  const whatsappGeminiAbortRef = useRef<AbortController | null>(null);
+  const whatsappGeminiSeqRef = useRef(0);
 
   const userOptions = useMemo(
     () => extractUserOptions(leadDetails, user?.name, user?.id),
@@ -480,7 +490,22 @@ export default function PipesPage() {
     setWhatsappQuickReplies(quickRepliesResp.data ?? []);
     setTagCatalog(tagResp.data ?? []);
     setSourceMappingRules(sourceMappingsResp.data.rules ?? []);
+
+    try {
+      const integrationsResp = await apiRequest<IntegrationsSettingsResponse>("/api/admin/settings/integrations", {}, token);
+      setWhatsappGeminiEnabled(Boolean(integrationsResp.data?.gemini?.enabled));
+    } catch {
+      setWhatsappGeminiEnabled(false);
+    }
   };
+
+  useEffect(() => {
+    whatsappGeminiAbortRef.current?.abort();
+    setWhatsappGeminiOpen(false);
+    setWhatsappGeminiLoading(false);
+    setWhatsappGeminiError(null);
+    setWhatsappGeminiInsights(null);
+  }, [whatsappConversation?.id]);
 
   const loadBoard = async (pipe: string, syncSettings = true, silent = false) => {
     if (!token) {
@@ -1178,6 +1203,52 @@ export default function PipesPage() {
       setError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel enviar documento.");
     } finally {
       setWhatsappSending(false);
+    }
+  };
+
+  const openLeadWhatsAppGeminiInsights = async () => {
+    if (!token || !whatsappConversation) {
+      return;
+    }
+
+    whatsappGeminiAbortRef.current?.abort();
+    const controller = new AbortController();
+    whatsappGeminiAbortRef.current = controller;
+    const requestSeq = whatsappGeminiSeqRef.current + 1;
+    whatsappGeminiSeqRef.current = requestSeq;
+    const conversationId = whatsappConversation.id;
+
+    setWhatsappGeminiOpen(true);
+    setWhatsappGeminiLoading(true);
+    setWhatsappGeminiError(null);
+    setWhatsappGeminiInsights(null);
+
+    try {
+      const response = await apiRequest<WhatsAppGeminiInsightsResponse>(
+        `/api/admin/whatsapp/conversations/${conversationId}/gemini-insights`,
+        { signal: controller.signal },
+        token,
+      );
+
+      if (
+        controller.signal.aborted ||
+        requestSeq !== whatsappGeminiSeqRef.current ||
+        whatsappConversation?.id !== conversationId
+      ) {
+        return;
+      }
+
+      setWhatsappGeminiInsights(response.data);
+    } catch (requestError) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      setWhatsappGeminiError(requestError instanceof ApiError ? requestError.message : "Nao foi possivel gerar os insights.");
+    } finally {
+      if (requestSeq === whatsappGeminiSeqRef.current) {
+        setWhatsappGeminiLoading(false);
+      }
     }
   };
 
@@ -2643,6 +2714,11 @@ export default function PipesPage() {
                           messages={whatsappMessages}
                           loading={whatsappLoading}
                           disabled={whatsappSending}
+                          aiEnabled={whatsappGeminiEnabled}
+                          aiLoading={whatsappGeminiLoading}
+                          onOpenAiInsights={() => {
+                            void openLeadWhatsAppGeminiInsights();
+                          }}
                           onSendText={sendLeadWhatsAppText}
                           onSendImage={sendLeadWhatsAppImage}
                           onSendDocument={sendLeadWhatsAppDocument}
@@ -2761,6 +2837,152 @@ export default function PipesPage() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {whatsappGeminiOpen && whatsappConversation && (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/45 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setWhatsappGeminiOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Insights</h3>
+                <p className="text-xs text-slate-500">{conversationDisplayName(whatsappConversation)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWhatsappGeminiOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+                aria-label="Fechar insights"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="max-h-[80vh] overflow-y-auto p-4">
+              {whatsappGeminiLoading && (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                  Gerando resumo da conversa...
+                </div>
+              )}
+
+              {!whatsappGeminiLoading && whatsappGeminiError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">
+                  {whatsappGeminiError}
+                </div>
+              )}
+
+              {!whatsappGeminiLoading && !whatsappGeminiError && whatsappGeminiInsights && (
+                <div className="space-y-3">
+                  {(() => {
+                    const score = Number.isFinite(Number(whatsappGeminiInsights.productivity_score))
+                      ? Math.max(0, Math.min(100, Number(whatsappGeminiInsights.productivity_score)))
+                      : 0;
+                    const band = String(whatsappGeminiInsights.productivity_band || "").toLowerCase();
+                    const isRed = band === "vermelha" || score <= 39;
+                    const isOrange = band === "laranja" || (!isRed && score <= 69);
+                    const palette = isRed
+                      ? {
+                          box: "border-red-200 bg-red-50",
+                          label: "text-red-700",
+                          bar: "bg-red-500",
+                          badge: "bg-red-100 text-red-700",
+                          name: "Vermelha",
+                        }
+                      : isOrange
+                        ? {
+                            box: "border-amber-200 bg-amber-50",
+                            label: "text-amber-700",
+                            bar: "bg-amber-500",
+                            badge: "bg-amber-100 text-amber-700",
+                            name: "Laranja",
+                          }
+                        : {
+                            box: "border-emerald-200 bg-emerald-50",
+                            label: "text-emerald-700",
+                            bar: "bg-emerald-500",
+                            badge: "bg-emerald-100 text-emerald-700",
+                            name: "Verde",
+                          };
+
+                    return (
+                      <article className={`rounded-lg border p-3 ${palette.box}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-xs font-semibold uppercase tracking-wide ${palette.label}`}>Temperatura do atendimento</p>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${palette.badge}`}>{palette.name}</span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
+                          <div className={`h-full ${palette.bar}`} style={{ width: `${score}%` }} />
+                        </div>
+                        <p className={`mt-1 text-xs font-medium ${palette.label}`}>Nota: {score}/100</p>
+                      </article>
+                    );
+                  })()}
+
+                  {!whatsappGeminiInsights.enabled && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Integracao Gemini desativada. Ative em Configuracoes &gt; Integracoes &gt; Gemini.
+                    </div>
+                  )}
+
+                  <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resumo</p>
+                    <p className="mt-1 text-sm text-slate-700">{whatsappGeminiInsights.summary || "Sem resumo disponivel."}</p>
+                  </article>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <article className="rounded-lg border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Como conversar</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Tom sugerido: <span className="font-medium capitalize text-slate-700">{whatsappGeminiInsights.recommended_formality || "equilibrado"}</span>
+                      </p>
+                      {(whatsappGeminiInsights.language_guidance ?? []).length > 0 ? (
+                        <ul className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                          {whatsappGeminiInsights.language_guidance.map((item, index) => (
+                            <li key={`pipe-lang-guidance-${index}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">Sem orientacoes adicionais no momento.</p>
+                      )}
+                    </article>
+
+                    <article className="rounded-lg border border-slate-200 bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Proximos passos</p>
+                      {(whatsappGeminiInsights.next_steps ?? []).length > 0 ? (
+                        <ul className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                          {whatsappGeminiInsights.next_steps.map((item, index) => (
+                            <li key={`pipe-next-step-${index}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm text-slate-700">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2 text-sm text-slate-500">Nenhuma acao recomendada.</p>
+                      )}
+                    </article>
+                  </div>
+
+                  {(whatsappGeminiInsights.risk_flags ?? []).length > 0 && (
+                    <article className="rounded-lg border border-red-200 bg-red-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-red-700">Pontos de atencao</p>
+                      <p className="mt-1 text-xs leading-relaxed text-red-700">
+                        {(whatsappGeminiInsights.risk_flags ?? []).join(" • ")}
+                      </p>
+                    </article>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

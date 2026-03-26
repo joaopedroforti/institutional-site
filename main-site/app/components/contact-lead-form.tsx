@@ -25,6 +25,7 @@ export default function ContactLeadForm({
   const [values, setValues] = useState(initialValues);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [feedback, setFeedback] = useState("");
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [hasTrackedOpen, setHasTrackedOpen] = useState(false);
   const [draftCaptured, setDraftCaptured] = useState(false);
 
@@ -119,7 +120,8 @@ export default function ContactLeadForm({
 
       setValues(initialValues);
       setStatus("success");
-      setFeedback("Solicitacao enviada. Vamos analisar e retornar para voce.");
+      setFeedback("Solicitação enviada. Vamos analisar e retornar para você.");
+      setSuccessModalOpen(true);
     } catch (error) {
       setStatus("error");
       setFeedback(error instanceof Error ? error.message : "Nao foi possivel enviar sua solicitacao.");
@@ -145,59 +147,82 @@ export default function ContactLeadForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <div className={styles.grid}>
-        <input
-          className={styles.input}
-          type="text"
-          placeholder="Nome completo"
-          value={values.name}
-          onChange={(event) => setValues((current) => ({ ...current, name: event.target.value }))}
+    <>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.grid}>
+          <input
+            className={styles.input}
+            type="text"
+            placeholder="Nome completo"
+            value={values.name}
+            onChange={(event) => setValues((current) => ({ ...current, name: event.target.value }))}
+            onFocus={trackOpenIfNeeded}
+            required
+          />
+          <input
+            className={styles.input}
+            type="text"
+            placeholder="Celular / WhatsApp"
+            value={values.phone}
+            onChange={(event) => setValues((current) => ({ ...current, phone: event.target.value }))}
+            onFocus={trackOpenIfNeeded}
+          />
+        </div>
+        <div className={styles.grid}>
+          <input
+            className={styles.input}
+            type="email"
+            placeholder="E-mail"
+            value={values.email}
+            onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
+            onFocus={trackOpenIfNeeded}
+          />
+          <input
+            className={styles.input}
+            type="text"
+            placeholder="Empresa"
+            value={values.company}
+            onChange={(event) => setValues((current) => ({ ...current, company: event.target.value }))}
+            onFocus={trackOpenIfNeeded}
+          />
+        </div>
+        <textarea
+          className={styles.textarea}
+          placeholder="Como podemos ajudar? Descreva brevemente seu desafio atual."
+          value={values.message}
+          onChange={(event) => setValues((current) => ({ ...current, message: event.target.value }))}
           onFocus={trackOpenIfNeeded}
           required
         />
-        <input
-          className={styles.input}
-          type="text"
-          placeholder="Celular / WhatsApp"
-          value={values.phone}
-          onChange={(event) => setValues((current) => ({ ...current, phone: event.target.value }))}
-          onFocus={trackOpenIfNeeded}
-        />
-      </div>
-      <div className={styles.grid}>
-        <input
-          className={styles.input}
-          type="email"
-          placeholder="E-mail"
-          value={values.email}
-          onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
-          onFocus={trackOpenIfNeeded}
-        />
-        <input
-          className={styles.input}
-          type="text"
-          placeholder="Empresa"
-          value={values.company}
-          onChange={(event) => setValues((current) => ({ ...current, company: event.target.value }))}
-          onFocus={trackOpenIfNeeded}
-        />
-      </div>
-      <textarea
-        className={styles.textarea}
-        placeholder="Como podemos ajudar? Descreva brevemente seu desafio atual."
-        value={values.message}
-        onChange={(event) => setValues((current) => ({ ...current, message: event.target.value }))}
-        onFocus={trackOpenIfNeeded}
-        required
-      />
 
-      {status === "success" ? <p className={styles.feedbackSuccess}>{feedback}</p> : null}
-      {status === "error" ? <p className={styles.feedbackError}>{feedback}</p> : null}
+        {status === "error" ? <p className={styles.feedbackError}>{feedback}</p> : null}
 
-      <button className={styles.button} type="submit" disabled={status === "loading"}>
-        {status === "loading" ? "Enviando..." : buttonLabel}
-      </button>
-    </form>
+        <button className={styles.button} type="submit" disabled={status === "loading"}>
+          {status === "loading" ? "Enviando..." : buttonLabel}
+        </button>
+      </form>
+
+      {successModalOpen ? (
+        <div className={styles.successModalBackdrop} onClick={() => setSuccessModalOpen(false)}>
+          <div
+            className={styles.successModalCard}
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Solicitação enviada"
+          >
+            <p className={styles.successModalTitle}>Solicitação Enviada</p>
+            <p className={styles.successModalText}>Entraremos em contato o mais rápido possível.</p>
+            <button
+              type="button"
+              className={styles.successModalButton}
+              onClick={() => setSuccessModalOpen(false)}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

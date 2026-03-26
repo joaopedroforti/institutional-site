@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\WhatsAppConversation;
 use App\Models\WhatsAppInstance;
 use App\Models\WhatsAppMessage;
+use App\Services\Gemini\GeminiConversationInsightsService;
 use App\Services\WhatsApp\EvolutionApiService;
 use App\Services\WhatsApp\WhatsAppConversationService;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +31,7 @@ class WhatsAppController extends Controller
     public function __construct(
         private readonly WhatsAppConversationService $service,
         private readonly EvolutionApiService $evolution,
+        private readonly GeminiConversationInsightsService $geminiInsights,
     ) {
     }
 
@@ -614,6 +616,19 @@ class WhatsAppController extends Controller
                 'messages' => $messages,
                 'conversations' => $conversations,
                 'last_message_id' => (int) ($messages->max('id') ?? $afterMessageId),
+            ],
+        ]);
+    }
+
+    public function conversationGeminiInsights(WhatsAppConversation $conversation): JsonResponse
+    {
+        $this->assertConversationInstance($conversation);
+        $insights = $this->geminiInsights->insightsForConversation($conversation);
+
+        return response()->json([
+            'data' => [
+                'conversation_id' => $conversation->id,
+                ...$insights,
             ],
         ]);
     }

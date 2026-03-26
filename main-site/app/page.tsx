@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FaBootstrap,
   FaBriefcase,
@@ -131,6 +131,10 @@ function useScrollReveal() {
 export default function Home() {
   const loopItems = [...technologyItems, ...technologyItems];
   const carouselRef = useRef<HTMLDivElement>(null);
+  const rotatingWords = ['Aplicações', 'Landing Pages', 'Sistemas', 'Sites', 'Automações'];
+  const [wordIndex, setWordIndex] = useState(0);
+  const [typedWord, setTypedWord] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useScrollReveal();
 
@@ -146,8 +150,40 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const currentWord = rotatingWords[wordIndex];
+    const reachedFullWord = typedWord === currentWord;
+    const reachedEmptyWord = typedWord.length === 0;
+
+    let typingDelay = isDeleting ? 55 : 110;
+    if (!isDeleting && reachedFullWord) typingDelay = 1200;
+    if (isDeleting && reachedEmptyWord) typingDelay = 220;
+
+    const timeout = window.setTimeout(() => {
+      if (!isDeleting) {
+        if (reachedFullWord) {
+          setIsDeleting(true);
+          return;
+        }
+
+        setTypedWord(currentWord.slice(0, typedWord.length + 1));
+        return;
+      }
+
+      if (reachedEmptyWord) {
+        setIsDeleting(false);
+        setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+        return;
+      }
+
+      setTypedWord(currentWord.slice(0, typedWord.length - 1));
+    }, typingDelay);
+
+    return () => window.clearTimeout(timeout);
+  }, [isDeleting, rotatingWords, typedWord, wordIndex]);
+
   return (
-    <SiteShell>
+    <SiteShell flushFooterGap>
       <style>{`
         /* ── Reset ────────────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; }
@@ -168,6 +204,26 @@ export default function Home() {
         @keyframes float {
           0%, 100% { transform: translateY(0); }
           50%       { transform: translateY(-20px); }
+        }
+        @keyframes hpTypeGradient {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 100% 50%; }
+        }
+        @keyframes hpCursorBlink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0; }
+        }
+        @keyframes hpNetworkDash {
+          0% { stroke-dashoffset: 0; }
+          100% { stroke-dashoffset: -120; }
+        }
+        @keyframes hpNodePulse {
+          0%, 100% { opacity: 0.45; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.22); }
+        }
+        @keyframes hpNetworkFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
         }
 
         /* ── Scroll reveal ────────────────────────────────────── */
@@ -245,6 +301,40 @@ export default function Home() {
           position: absolute; inset: 0; z-index: 2;
           background: linear-gradient(180deg, transparent 0%, rgba(15,23,42,.4) 100%);
         }
+        .hp-hero-network {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          pointer-events: none;
+          opacity: 0.5;
+          animation: hpNetworkFloat 9s ease-in-out infinite;
+        }
+        .hp-hero-network svg {
+          width: 100%;
+          height: 100%;
+        }
+        .hp-network-line {
+          fill: none;
+          stroke: rgba(147, 197, 253, 0.45);
+          stroke-width: 1.2;
+          stroke-dasharray: 8 9;
+          animation: hpNetworkDash 8s linear infinite;
+        }
+        .hp-network-line-soft {
+          stroke: rgba(191, 219, 254, 0.25);
+          stroke-width: 0.9;
+          stroke-dasharray: 6 10;
+          animation-duration: 11s;
+        }
+        .hp-network-node {
+          fill: #93c5fd;
+          transform-origin: center;
+          animation: hpNodePulse 3.5s ease-in-out infinite;
+          filter: drop-shadow(0 0 8px rgba(147, 197, 253, 0.45));
+        }
+        .hp-network-node.alt {
+          animation-delay: 1.2s;
+        }
         .hp-hero-orb { position: absolute; border-radius: 50%; z-index: 1; }
         .hp-hero-orb-a {
           width: 300px; height: 300px; top: -100px; right: -100px;
@@ -272,6 +362,26 @@ export default function Home() {
           font-size: clamp(2rem, 5vw, 3.5rem);
           font-weight: 800; line-height: 1.2;
           margin: 16px 0; letter-spacing: -0.02em;
+        }
+        .hp-typewriter-slot {
+          display: inline-flex;
+          align-items: baseline;
+          min-width: 13ch;
+        }
+        .hp-typewriter-word {
+          background-image: linear-gradient(120deg, #bfdbfe 0%, #60a5fa 35%, #2563eb 65%, #93c5fd 100%);
+          background-size: 220% 220%;
+          animation: hpTypeGradient 4s ease-in-out infinite alternate;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          -webkit-text-fill-color: transparent;
+        }
+        .hp-typewriter-cursor {
+          margin-left: 2px;
+          color: #93c5fd;
+          animation: hpCursorBlink 1s steps(1, end) infinite;
+          font-weight: 600;
         }
         .hp-hero-desc {
           font-size: 1.0625rem; color: rgba(255,255,255,.8);
@@ -440,6 +550,7 @@ export default function Home() {
           border-radius: 16px; padding: 40px;
           backdrop-filter: blur(10px);
           animation: fadeInRight 1s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+          align-self: center;
         }
         .hp-form-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 28px; color: white; }
 
@@ -521,13 +632,38 @@ export default function Home() {
       <section className="hp-hero">
         <div className="hp-hero-bg" />
         <div className="hp-hero-overlay" />
+        <div className="hp-hero-network" aria-hidden="true">
+          <svg viewBox="0 0 1440 900" preserveAspectRatio="none">
+            <path className="hp-network-line" d="M20 140 L220 220 L410 130 L650 230 L860 120 L1120 240 L1360 150" />
+            <path className="hp-network-line hp-network-line-soft" d="M40 420 L250 350 L430 470 L680 360 L920 500 L1180 390 L1400 470" />
+            <path className="hp-network-line" d="M-20 710 L180 640 L390 760 L620 650 L880 780 L1120 680 L1460 760" />
+            <path className="hp-network-line hp-network-line-soft" d="M90 70 L280 120 L470 40 L740 130 L980 50 L1240 120" />
+
+            <circle className="hp-network-node" cx="220" cy="220" r="4" />
+            <circle className="hp-network-node alt" cx="650" cy="230" r="4" />
+            <circle className="hp-network-node" cx="1120" cy="240" r="4" />
+            <circle className="hp-network-node alt" cx="430" cy="470" r="4" />
+            <circle className="hp-network-node" cx="920" cy="500" r="4" />
+            <circle className="hp-network-node alt" cx="390" cy="760" r="4" />
+            <circle className="hp-network-node" cx="880" cy="780" r="4" />
+            <circle className="hp-network-node alt" cx="980" cy="50" r="4" />
+          </svg>
+        </div>
         <div className="hp-hero-orb hp-hero-orb-a" />
         <div className="hp-hero-orb hp-hero-orb-b" />
 
         <div className="hp-hero-inner">
           <div className="hp-hero-text" data-reveal>
-            <p className="hp-kicker">DESENVOLVIMENTO DE SISTEMAS</p>
-            <h1 className="hp-hero-title">Desenvolvimento de aplicações de alta performance</h1>
+            <h1 className="hp-hero-title">
+              <span className="hp-typewriter-slot">
+                <span className="hp-typewriter-word">{typedWord}</span>
+                <span className="hp-typewriter-cursor" aria-hidden="true">
+                  |
+                </span>
+              </span>
+              <br />
+              de alto desempenho
+            </h1>
             <p className="hp-hero-desc">
               Criamos soluções robustas e escaláveis, alinhadas aos objetivos do seu negócio.
             </p>

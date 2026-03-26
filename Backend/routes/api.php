@@ -97,6 +97,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
         Route::post('/conversations/{conversation}/tags', [WhatsAppController::class, 'addConversationTag']);
         Route::delete('/conversations/{conversation}/tags/{tag}', [WhatsAppController::class, 'removeConversationTag']);
         Route::get('/conversations/{conversation}/messages', [WhatsAppController::class, 'conversationMessages']);
+        Route::get('/conversations/{conversation}/gemini-insights', [WhatsAppController::class, 'conversationGeminiInsights']);
         Route::post('/conversations/{conversation}/messages/text', [WhatsAppController::class, 'sendText']);
         Route::post('/conversations/{conversation}/messages/image', [WhatsAppController::class, 'sendImage']);
         Route::post('/conversations/{conversation}/messages/audio', [WhatsAppController::class, 'sendAudio']);

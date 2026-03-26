@@ -3,7 +3,7 @@ import type { WhatsAppConversationRecord, WhatsAppMessageRecord } from "../../ty
 import WhatsAppMessageBubble from "./WhatsAppMessageBubble";
 import WhatsAppComposer from "./WhatsAppComposer";
 import { conversationDisplayName } from "./utils";
-import { User, X } from "lucide-react";
+import { BrainCircuit, User, X } from "lucide-react";
 
 type Props = {
   conversation: WhatsAppConversationRecord | null;
@@ -20,6 +20,9 @@ type Props = {
   onSendAudio: (payload: { base64: string; mime: string; filename?: string }) => Promise<void>;
   quickReplies?: Array<{ id: number; title: string; content: string }>;
   onOpenLeadCard?: () => void;
+  aiEnabled?: boolean;
+  aiLoading?: boolean;
+  onOpenAiInsights?: () => void;
 };
 
 export default function WhatsAppConversationView({
@@ -37,6 +40,9 @@ export default function WhatsAppConversationView({
   onSendAudio,
   quickReplies,
   onOpenLeadCard,
+  aiEnabled,
+  aiLoading,
+  onOpenAiInsights,
 }: Props) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [avatarZoomOpen, setAvatarZoomOpen] = useState(false);
@@ -148,7 +154,22 @@ export default function WhatsAppConversationView({
             {conversation && <p className="truncate text-xs text-slate-500">{conversation.phone || conversation.remote_jid}</p>}
           </div>
         </div>
-        {conversation && <div className="flex items-center gap-2">{headerActions}</div>}
+        {conversation && (
+          <div className="flex items-center gap-2">
+            {aiEnabled && onOpenAiInsights ? (
+              <button
+                type="button"
+                onClick={onOpenAiInsights}
+                disabled={Boolean(aiLoading)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-300 text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+                title="Insights de conversa com IA"
+              >
+                <BrainCircuit size={14} />
+              </button>
+            ) : null}
+            {headerActions}
+          </div>
+        )}
       </div>
 
       <div ref={listRef} onScroll={() => { void handleScroll(); }} className="flex-1 space-y-3 overflow-y-auto p-4">

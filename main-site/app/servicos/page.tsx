@@ -1,8 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   FaArrowRight,
   FaChartLine,
-  FaCheck,
   FaCloudArrowUp,
   FaCode,
   FaComments,
@@ -47,7 +47,7 @@ const serviceCards: ServiceCard[] = [
   {
     title: "Suporte Técnico",
     description:
-      "Assistência especializada remota e presencial para resolver falhas, minimizar tempo de inatividade e dar suporte a aplicativos já existentes da empresa.",
+      "Assistência especializada remota e presencial para resolver falhas, minimizar tempo de inatividade e dar suporte a aplicativos existentes.",
     icon: <FaHeadset aria-hidden="true" />,
     colorClass: "iconGreen",
   },
@@ -83,14 +83,17 @@ const serviceCards: ServiceCard[] = [
 
 const operatingModel = [
   {
+    step: "01",
     title: "Diagnóstico técnico",
     description: "Entendemos cenário atual, gargalos e objetivos de negócio para definir prioridades reais.",
   },
   {
+    step: "02",
     title: "Plano e arquitetura",
     description: "Estruturamos escopo, stack e etapas de entrega com previsibilidade de prazo e investimento.",
   },
   {
+    step: "03",
     title: "Entrega e evolução",
     description: "Implementamos com qualidade, acompanhamos resultados e evoluímos o produto continuamente.",
   },
@@ -115,64 +118,39 @@ const outcomes = [
   },
 ];
 
-const heroHighlights = [
-  "Escopo e prioridades definidos junto ao negócio.",
-  "Time técnico sênior com acompanhamento próximo.",
-  "Arquitetura preparada para crescer sem retrabalho.",
-];
+const colorMap: Record<ServiceCard["colorClass"], string> = {
+  iconBlue: "iconBlue",
+  iconCyan: "iconCyan",
+  iconPurple: "iconPurple",
+  iconGreen: "iconGreen",
+  iconOrange: "iconOrange",
+};
 
 export default function ServicesPage() {
-  const getColorClass = (colorClass: ServiceCard["colorClass"]) => {
-    switch (colorClass) {
-      case "iconBlue":
-        return styles.iconBlue;
-      case "iconCyan":
-        return styles.iconCyan;
-      case "iconPurple":
-        return styles.iconPurple;
-      case "iconGreen":
-        return styles.iconGreen;
-      case "iconOrange":
-        return styles.iconOrange;
-      default:
-        return styles.iconBlue;
-    }
-  };
-
   return (
     <SiteShell>
+      {/* ── HERO ─────────────────────────────────────────── */}
       <section className={styles.hero} data-reveal>
         <div className={styles.heroInner}>
-          <article className={styles.heroContent} data-reveal>
-            <p className={styles.kicker}>SERVIÇOS</p>
+          <div className={styles.heroContent} data-reveal>
+            <p className={styles.kicker}>Serviços</p>
             <h1>Soluções tecnológicas sob medida para escalar sua operação</h1>
-            <p>
-              Planejamos, desenvolvemos e sustentamos projetos digitais com foco em resultado, prazo realista e evolução contínua do negócio.
+            <p className={styles.heroLead}>
+              Planejamos, desenvolvemos e sustentamos projetos digitais com foco em resultado,
+              prazo realista e evolução contínua do negócio.
             </p>
 
-            <ul className={styles.heroHighlights}>
-              {heroHighlights.map((item) => (
+            <ul className={styles.heroChecks}>
+              {[
+                "Time técnico Sênior",
+                "Arquiterura Preparada",
+                "Padrões de Segurança e LGPD",
+              ].map((item) => (
                 <li key={item}>
-                  <FaCheck aria-hidden="true" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
-
-            <div className={styles.heroStats}>
-              <article className={styles.heroStatItem}>
-                <strong>8+</strong>
-                <span>frentes de serviço</span>
-              </article>
-              <article className={styles.heroStatItem}>
-                <strong>01 a 03</strong>
-                <span>etapas de diagnóstico e plano</span>
-              </article>
-              <article className={styles.heroStatItem}>
-                <strong>360°</strong>
-                <span>visão de produto, operação e suporte</span>
-              </article>
-            </div>
 
             <div className={styles.heroActions}>
               <Link href="/contato" className={styles.primaryButton}>
@@ -183,44 +161,52 @@ export default function ServicesPage() {
                 Ver cases
               </Link>
             </div>
-          </article>
+          </div>
 
-          <aside className={styles.heroPanel} data-reveal>
-            <h2>Entrega técnica com visão de negócio</h2>
-            <ul>
-              <li>Escopo orientado a impacto e metas mensuráveis.</li>
-              <li>Arquitetura preparada para escala, segurança e manutenção.</li>
-              <li>Governança de execução com comunicação próxima ao cliente.</li>
-            </ul>
+          <aside className={styles.heroVisual} data-reveal>
+            <div className={styles.heroImageOnly}>
+              <Image
+                src="/images/servicos.png"
+                alt="Serviços digitais para empresas"
+                width={720}
+                height={520}
+                className={styles.heroImageOnlyImg}
+                priority
+              />
+            </div>
           </aside>
         </div>
       </section>
 
-      <section className={styles.capabilities} data-reveal>
-        <article className={styles.capabilityCard} data-reveal>
+      {/* ── CAPABILITIES ─────────────────────────────────── */}
+      <section className={styles.capabilities}>
+        <article className={styles.capabilityCard}>
           <h3>Projetos sob medida</h3>
           <p>Criamos soluções alinhadas à sua operação, com tecnologia adequada ao momento do negócio.</p>
         </article>
-        <article className={styles.capabilityCard} data-reveal>
+        <article className={styles.capabilityCard}>
           <h3>Integração de ponta a ponta</h3>
           <p>Conectamos sistemas, APIs e ferramentas para eliminar retrabalho e aumentar produtividade.</p>
         </article>
-        <article className={styles.capabilityCard} data-reveal>
+        <article className={styles.capabilityCard}>
           <h3>Sustentação contínua</h3>
           <p>Mantemos sua solução estável, segura e evoluindo com suporte técnico especializado.</p>
         </article>
       </section>
 
+      {/* ── SERVICES GRID ────────────────────────────────── */}
       <section className={styles.servicesSection}>
         <div className={styles.sectionHead} data-reveal>
-          <p className={styles.kicker}>PORTFÓLIO DE SERVIÇOS</p>
+          <p className={styles.kicker}>Portfólio de serviços</p>
           <h2>Soluções completas para evoluir seu ambiente digital</h2>
         </div>
 
         <div className={styles.grid}>
           {serviceCards.map((card) => (
             <article className={styles.card} key={card.title} data-reveal>
-              <span className={`${styles.icon} ${getColorClass(card.colorClass)}`}>{card.icon}</span>
+              <span className={`${styles.icon} ${styles[colorMap[card.colorClass]]}`}>
+                {card.icon}
+              </span>
               <h3>{card.title}</h3>
               <p>{card.description}</p>
             </article>
@@ -228,26 +214,28 @@ export default function ServicesPage() {
         </div>
       </section>
 
+      {/* ── HOW WE WORK ──────────────────────────────────── */}
       <section className={styles.modelSection} data-reveal>
         <div className={styles.sectionHead} data-reveal>
-          <p className={styles.kicker}>COMO TRABALHAMOS</p>
+          <p className={styles.kicker}>Como trabalhamos</p>
           <h2>Modelo de execução para garantir previsibilidade e qualidade</h2>
         </div>
 
         <div className={styles.modelGrid}>
-          {operatingModel.map((step, index) => (
-            <article className={styles.modelItem} key={step.title} data-reveal>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <h3>{step.title}</h3>
-              <p>{step.description}</p>
+          {operatingModel.map((item) => (
+            <article className={styles.modelItem} key={item.step} data-reveal data-step={item.step}>
+              <span className={styles.stepBadge}>{item.step}</span>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
             </article>
           ))}
         </div>
       </section>
 
+      {/* ── OUTCOMES ─────────────────────────────────────── */}
       <section className={styles.outcomesSection} data-reveal>
         <div className={styles.sectionHead} data-reveal>
-          <p className={styles.kicker}>RESULTADOS ESPERADOS</p>
+          <p className={styles.kicker}>Resultados esperados</p>
           <h2>O que sua empresa ganha ao evoluir com a FortiCorp</h2>
         </div>
 
@@ -261,10 +249,11 @@ export default function ServicesPage() {
         </div>
       </section>
 
+      {/* ── CTA ──────────────────────────────────────────── */}
       <section className={styles.ctaSection} data-reveal>
         <div className={styles.ctaInner}>
-          <div>
-            <p className={styles.kicker}>PRÓXIMO PASSO</p>
+          <div className={styles.ctaText}>
+            <p className={styles.kicker}>Próximo passo</p>
             <h2>Vamos estruturar o plano ideal para o seu projeto?</h2>
             <p>Converse com nosso time para mapear prioridades e receber uma proposta técnica personalizada.</p>
           </div>
