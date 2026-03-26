@@ -3,6 +3,21 @@ import { runtimeConfig } from "../config/runtime";
 const API_BASE_URL = runtimeConfig.apiBaseUrl;
 const API_TIMEOUT_MS = runtimeConfig.apiTimeoutMs;
 
+function buildApiUrl(baseUrl: string, path: string): string {
+  const normalizedBase = baseUrl.replace(/(?:\/api){2,}$/i, "/api");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (!normalizedBase) {
+    return normalizedPath;
+  }
+
+  // Prevent duplicated `/api` when both base URL and path include it.
+  if (normalizedBase.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 export type ApiErrorPayload = {
   message: string;
   status: number;
@@ -64,7 +79,7 @@ export async function apiRequest<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(buildApiUrl(API_BASE_URL, path), {
       ...init,
       headers,
       signal: init.signal ?? controller.signal,
