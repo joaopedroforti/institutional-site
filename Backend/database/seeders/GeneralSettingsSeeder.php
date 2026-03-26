@@ -141,14 +141,19 @@ class GeneralSettingsSeeder extends Seeder
             return;
         }
 
+        $fallbackUserIdRaw = env('SETTINGS_DISTRIBUTION_FALLBACK_USER_ID');
+        $fallbackUserId = null;
+        if ($fallbackUserIdRaw !== null && $fallbackUserIdRaw !== '') {
+            $parsed = (int) $fallbackUserIdRaw;
+            $fallbackUserId = $parsed > 0 ? $parsed : null;
+        }
+
         DB::table('lead_distribution_settings')->updateOrInsert(
             ['id' => 1],
             [
                 'is_enabled' => filter_var(env('SETTINGS_DISTRIBUTION_ENABLED', true), FILTER_VALIDATE_BOOL),
                 'fallback_rule' => (string) env('SETTINGS_DISTRIBUTION_FALLBACK_RULE', 'unassigned'),
-                'fallback_user_id' => env('SETTINGS_DISTRIBUTION_FALLBACK_USER_ID') !== null
-                    ? (int) env('SETTINGS_DISTRIBUTION_FALLBACK_USER_ID')
-                    : null,
+                'fallback_user_id' => $fallbackUserId,
                 'current_index' => (int) env('SETTINGS_DISTRIBUTION_CURRENT_INDEX', 0),
                 'queue_hash' => null,
                 'updated_at' => now(),
