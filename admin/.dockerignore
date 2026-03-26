@@ -1,7 +1,14 @@
 .git
 .gitignore
+.github
 node_modules
 dist
 .env
 .env.*
 Dockerfile
+README.md
+LICENSE.md
+banner.png
+.idea
+.vscode
+*.md

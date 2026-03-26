@@ -75,3 +75,18 @@ Use como base `main-site/.env.example`:
 - Configure domínio/subdomínio por serviço no EasyPanel.
 - Garanta que o serviço do backend esteja no ar antes do admin/main-site.
 - Se alterar migrations, rode novamente `php artisan migrate --force`.
+
+## Evitar travamento da VPS no deploy
+
+Em VPS menor, o principal risco é build concorrente (admin + main-site ao mesmo tempo).
+
+Recomendado:
+1. Deploy `backend` primeiro.
+2. Deploy `admin` e aguarde concluir.
+3. Deploy `main-site` por último.
+
+Boas práticas no EasyPanel:
+- Evite rebuild de múltiplos serviços simultaneamente.
+- Se possível, limite cada serviço para memória fixa (ex.: 512MB~1GB por serviço frontend em build).
+- Mantenha swap habilitado na VPS para evitar congelamento total do host.
+- Prefira atualizar um serviço por vez em janelas curtas.

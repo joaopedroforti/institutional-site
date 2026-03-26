@@ -3,10 +3,12 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 FROM base AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV CI=true
+ENV NODE_OPTIONS=--max-old-space-size=1024
 ARG NEXT_PUBLIC_BACKEND_URL
 ARG NEXT_PUBLIC_API_BASE_URL
 ARG NEXT_PUBLIC_MAIN_SITE_URL

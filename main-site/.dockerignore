@@ -1,7 +1,15 @@
 .git
 .gitignore
+.github
 node_modules
 .next
 .env
 .env.*
 Dockerfile
+README.md
+docs
+AGENTS.md
+CLAUDE.md
+.idea
+.vscode
+*.md

@@ -1,5 +1,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+ENV CI=true
+ENV NODE_OPTIONS=--max-old-space-size=768
 
 ARG VITE_API_URL
 ARG VITE_BACKEND_URL
@@ -16,7 +18,7 @@ ENV VITE_WS_URL=$VITE_WS_URL
 ENV VITE_API_TIMEOUT_MS=$VITE_API_TIMEOUT_MS
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build
